@@ -62,8 +62,8 @@ export const RoleImageModal: React.FC<RoleImageModalProps> = ({ role, onClose })
           </div>
         </div>
 
-        {/* Role Title and Team Badge */}
-        <div className="mt-3 space-y-1.5 w-full flex flex-col items-center">
+        {/* Role Title, Team Badge and Quote */}
+        <div className="mt-3 space-y-1.5 w-full flex flex-col items-center text-center">
           <div className="flex items-center gap-2">
             <h3 className="font-serif font-extrabold text-xl sm:text-2xl text-slate-100 tracking-wide">
               {roleMeta.name}
@@ -75,13 +75,15 @@ export const RoleImageModal: React.FC<RoleImageModalProps> = ({ role, onClose })
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
-            <span>Thứ tự hành động đêm: #{roleMeta.nightPriority}</span>
-          </div>
+          {roleMeta.quote && (
+            <p className="text-xs sm:text-sm text-amber-200/90 italic font-serif max-w-sm px-2">
+              “{roleMeta.quote}”
+            </p>
+          )}
         </div>
 
         {/* Role Ability / Description Box */}
-        <div className="mt-4 w-full p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/80 text-slate-200 text-xs sm:text-sm leading-relaxed text-left shadow-inner">
+        <div className="mt-3 w-full p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/80 text-slate-200 text-xs sm:text-sm leading-relaxed text-left shadow-inner">
           <p className="text-slate-300">
             <strong className="text-purple-300 font-semibold block mb-1">
               ✨ Năng lực đặc biệt:
