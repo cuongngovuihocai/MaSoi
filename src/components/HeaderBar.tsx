@@ -75,7 +75,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
           <img
             src={logoSrc}
             alt="Ma Sói Logo"
-            className="w-full h-full object-cover scale-140 group-hover:scale-155 transition-transform duration-300"
+            className="w-full h-full object-cover scale-140 group-hover:scale-155 transition-transform duration-300 card-img-smooth"
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-purple-950/30 via-transparent to-transparent pointer-events-none" />
