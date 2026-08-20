@@ -49,27 +49,33 @@ export const CardArt: React.FC<CardArtProps> = ({
   const [imgError, setImgError] = React.useState(false);
   const [backImgError, setBackImgError] = React.useState(false);
 
+  const getCardPath = (filename: string) => {
+    const base = import.meta.env.BASE_URL || '/';
+    const cleanBase = base.endsWith('/') ? base : `${base}/`;
+    return `${cleanBase}cards/${filename}`;
+  };
+
   // Dynamic image source with random villager male/female variant & fallback
   const [currentImgSrc, setCurrentImgSrc] = React.useState(() => {
     if (role === 'villager') {
-      return Math.random() < 0.5 ? '/cards/villager.png' : '/cards/villager_fm.png';
+      return Math.random() < 0.5 ? getCardPath('villager.png') : getCardPath('villager_fm.png');
     }
-    return `/cards/${role}.png`;
+    return getCardPath(`${role}.png`);
   });
 
   // Re-sync image source if role prop changes
   React.useEffect(() => {
     setImgError(false);
     if (role === 'villager') {
-      setCurrentImgSrc(Math.random() < 0.5 ? '/cards/villager.png' : '/cards/villager_fm.png');
+      setCurrentImgSrc(Math.random() < 0.5 ? getCardPath('villager.png') : getCardPath('villager_fm.png'));
     } else {
-      setCurrentImgSrc(`/cards/${role}.png`);
+      setCurrentImgSrc(getCardPath(`${role}.png`));
     }
   }, [role]);
 
   const handleImgError = () => {
-    if (role === 'villager' && currentImgSrc === '/cards/villager_fm.png') {
-      setCurrentImgSrc('/cards/villager.png');
+    if (role === 'villager' && currentImgSrc === getCardPath('villager_fm.png')) {
+      setCurrentImgSrc(getCardPath('villager.png'));
     } else {
       setImgError(true);
     }
@@ -131,7 +137,7 @@ export const CardArt: React.FC<CardArtProps> = ({
       >
         {!backImgError ? (
           <img
-            src="/cards/card_back.png"
+            src={getCardPath('card_back.png')}
             alt="Mặt lưng"
             onError={() => setBackImgError(true)}
             className="absolute inset-0 w-full h-full object-cover rounded-lg z-0"
