@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/MaSoi/',
+    base: process.env.NODE_ENV === 'production' ? '/MaSoi/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
