@@ -72,6 +72,15 @@ html body [class*="font-patrick"] {
   .perspective-1000 {
     perspective: 1000px;
   }
+  
+  /* Smooth downsampling for high-res cards */
+  .card-img-smooth {
+    image-rendering: auto;
+    image-rendering: -webkit-optimize-contrast;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }
 
 @keyframes flip3d {
