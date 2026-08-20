@@ -217,9 +217,6 @@ export const RuleGuideModal: React.FC<RuleGuideModalProps> = ({ isOpen, onClose 
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-300 leading-snug">{meta.ability}</p>
-                      <span className="text-[10px] text-purple-400/90 font-medium block pt-1 group-hover:underline">
-                        🔍 Chạm để xem hình phóng to
-                      </span>
                     </div>
                   </div>
                 ))}
