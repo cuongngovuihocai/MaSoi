@@ -10,7 +10,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Ban đêm ngủ ngon giấc. Ban ngày thảo luận và suy luận để tìm ra Ma Sói.',
     nightPriority: 99,
     iconName: 'User',
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Chỉ có sự đoàn kết mới cứu được ngôi làng này.',
   },
   werewolf: {
@@ -22,7 +22,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Mỗi đêm thức dậy cùng đồng đồng thống nhất chọn 1 dân làng để tiêu diệt.',
     nightPriority: 3,
     iconName: 'Wolf',
-    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     quote: 'Đêm nay, máu sẽ nhuộm đỏ ngõ làng...',
   },
   seer: {
@@ -34,7 +34,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Mỗi đêm chọn 1 người để Quản trò tiết lộ người đó có phải Ma Sói hay không.',
     nightPriority: 7,
     iconName: 'Eye',
-    badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Đôi mắt ta nhìn thấu màn đêm bóng tối.',
   },
   guard: {
@@ -46,7 +46,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Mỗi đêm chọn 1 người để bảo vệ khỏi cú cắn của Sói. Không bảo vệ 1 người 2 đêm liên tiếp.',
     nightPriority: 6,
     iconName: 'Shield',
-    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Tấm khiên này sẽ chở che cho kẻ vô tội.',
   },
   witch: {
@@ -58,7 +58,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Có 1 lọ thuốc cứu người bị Sói cắn và 1 lọ thuốc độc tiêu diệt 1 người. Mỗi lọ chỉ dùng 1 lần.',
     nightPriority: 8,
     iconName: 'Sparkles',
-    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Sự sống hay cái chết nằm trong tay ta.',
   },
   hunter: {
@@ -70,7 +70,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Khi bị giết bởi bất kỳ ai hoặc bị treo cổ, Thợ Săn có quyền bắn gục 1 người chết theo.',
     nightPriority: 99,
     iconName: 'Target',
-    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Phát đạn cuối cùng sẽ mang kẻ thù cùng xuống mồ.',
   },
   elder: {
@@ -82,7 +82,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Bị Sói cắn 2 lần mới chết. Tuy nhiên nếu bị treo cổ, Phù Thủy độc hoặc Thợ Săn bắn, Già Làng chết ngay và Dân Làng mất mọi năng lực.',
     nightPriority: 99,
     iconName: 'Crown',
-    badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Sự khôn ngoan tích tụ qua nhiều năm tháng.',
   },
   cupid: {
@@ -94,7 +94,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Đêm đầu tiên thức dậy chọn 2 người yêu nhau. Nếu 1 trong 2 chết, người kia lập tức chết theo.',
     nightPriority: 1,
     iconName: 'Heart',
-    badgeColor: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Tình yêu vượt qua ranh giới của sự sống và cái chết.',
   },
   fox: {
@@ -106,7 +106,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Mỗi đêm chọn cụm 3 người ngồi cạnh nhau. Nếu có Sói, Quản trò gật đầu. Nếu không có Sói, Cáo mất vĩnh viễn năng lực.',
     nightPriority: 9,
     iconName: 'Feather',
-    badgeColor: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Mùi hương của lũ sói không thể qua mắt ta.',
   },
   piper: {
@@ -118,7 +118,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Mỗi đêm thôi miên 2 người. Khi tất cả người sống đều bị thôi miên, Người Thổi Sáo chiến thắng độc lập.',
     nightPriority: 10,
     iconName: 'Music',
-    badgeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/30',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     quote: 'Hãy chìm đắm vào giai điệu dịu êm này...',
   },
   white_wolf: {
@@ -130,7 +130,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Thức dậy cùng đàn Sói tiêu diệt dân làng. Cách 1 đêm thức riêng 1 lần để ăn thịt 1 con Sói khác.',
     nightPriority: 5,
     iconName: 'Moon',
-    badgeColor: 'bg-slate-200/20 text-slate-100 border-slate-300/30',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     quote: 'Ta không cần bầy đàn, ta là chúa tể đêm đen.',
   },
   curse_wolf: {
@@ -142,7 +142,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Sở hữu 1 lần duy nhất trong toàn bộ ván chơi biến nạn nhân bị Sói cắn thành Sói mới thay vì chết.',
     nightPriority: 4,
     iconName: 'Skull',
-    badgeColor: 'bg-red-600/20 text-red-300 border-red-500/30',
+    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     quote: 'Hãy gia nhập cùng bầy Sói!',
   },
   dire_wolf: {
@@ -154,7 +154,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Khi chưa có con Sói nào trong bầy bị tiêu diệt, Sói Hùm có quyền cắn thêm 1 dân làng mỗi đêm.',
     nightPriority: 4,
     iconName: 'Zap',
-    badgeColor: 'bg-red-500/20 text-red-200 border-red-400/30',
+    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     quote: 'Sức mạnh tột cùng khi bầy đàn còn nguyên vẹn!',
   },
   idiot: {
@@ -166,7 +166,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Nếu bị làng vote treo cổ, Thằng Ngốc lật bài và được tha chết. Tuy nhiên sau đó mất quyền bỏ phiếu.',
     nightPriority: 99,
     iconName: 'Smile',
-    badgeColor: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Tôi đâu biết gì đâu, sao lại treo cổ tôi?',
   },
   angel: {
@@ -178,7 +178,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Nhiệm vụ duy nhất: Dụ làng vote treo cổ mình ngay trong Ngày 1. Nếu thành công, Thiên Thần thắng trận!',
     nightPriority: 99,
     iconName: 'Sparkle',
-    badgeColor: 'bg-sky-400/20 text-sky-200 border-sky-300/30',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
     quote: 'Hãy đưa ta về với thiên đường!',
   },
   scapegoat: {
@@ -190,7 +190,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Khi số phiếu biểu quyết treo cổ ban ngày bị hòa, Hình Nhân Thế Mạng sẽ bị đem treo cổ thay.',
     nightPriority: 99,
     iconName: 'Ghost',
-    badgeColor: 'bg-stone-500/20 text-stone-300 border-stone-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Số phận gánh chịu tai họa thay người khác.',
   },
   stuttering_judge: {
@@ -202,7 +202,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Có quyền yêu cầu Quản trò tổ chức 2 lần biểu quyết treo cổ trong cùng 1 ngày (dùng 1 lần).',
     nightPriority: 99,
     iconName: 'Gavel',
-    badgeColor: 'bg-indigo-600/20 text-indigo-200 border-indigo-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Tòa án tuyên bố xét xử!',
   },
   wild_child: {
@@ -214,7 +214,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Thức dậy Đêm 1 chọn 1 người làm "Mẹ nuôi". Ban đầu thuộc phe Dân Làng. Khi "Mẹ nuôi" qua đời, Đứa Trẻ Hoang Dã biến thành Ma Sói.',
     nightPriority: 1,
     iconName: 'Flame',
-    badgeColor: 'bg-lime-500/20 text-lime-200 border-lime-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Nếu Mẹ nuôi ra đi, ta sẽ nhuộm máu ngôi làng này...',
   },
   wolf_man: {
@@ -226,7 +226,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Ban đêm thức dậy cùng phe Ma Sói, nhưng thuộc phe Dân Làng và thắng cùng Dân Làng.',
     nightPriority: 3,
     iconName: 'Wolf',
-    badgeColor: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     quote: 'Khoác lên mình lốt quỷ, nhưng trái tim vẫn hướng về dân làng.',
   },
 };
