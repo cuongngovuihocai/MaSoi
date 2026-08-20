@@ -140,7 +140,7 @@ export const CardArt: React.FC<CardArtProps> = ({
             src={getCardPath('card_back.png')}
             alt="Mặt lưng"
             onError={() => setBackImgError(true)}
-            className="absolute inset-0 w-full h-full object-cover rounded-lg z-0"
+            className="absolute inset-0 w-full h-full object-cover rounded-lg z-0 card-img-smooth"
           />
         ) : (
           <div className="w-full h-full border border-purple-500/30 rounded-lg flex flex-col items-center justify-center p-2 relative z-10">
@@ -178,7 +178,7 @@ export const CardArt: React.FC<CardArtProps> = ({
           src={currentImgSrc}
           alt={roleMeta.name}
           onError={handleImgError}
-          className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-100 z-0"
+          className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-100 z-0 card-img-smooth"
         />
       ) : null}
 
