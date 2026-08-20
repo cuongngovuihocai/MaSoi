@@ -182,7 +182,7 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
             </div>
 
             {/* Description & Win Condition Box */}
-            <div className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left text-xs space-y-1.5">
+            <div className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left text-xs space-y-2">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
                 <span className="font-bold text-amber-300 flex items-center gap-1">
                   <Zap className="w-3.5 h-3.5 text-amber-400" /> Kỹ Năng:
@@ -192,6 +192,11 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
                 </span>
               </div>
               <p className="text-slate-200 leading-relaxed text-[11px]">{roleMeta.ability}</p>
+              {roleMeta.quote && (
+                <p className="text-[11px] text-amber-200/90 italic pt-1 border-t border-slate-800/60">
+                  “{roleMeta.quote}”
+                </p>
+              )}
             </div>
 
             {/* Sticky/Prominent Confirmation Action Button */}
