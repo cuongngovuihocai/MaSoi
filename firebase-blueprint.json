@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "A Werewolf game room",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "hostId": { "type": "string" },
+        "hostName": { "type": "string" },
+        "status": { "type": "string" },
+        "dayNumber": { "type": "number" },
+        "phaseEndTime": { "type": "number" },
+        "nightStep": { "type": "string" },
+        "winner": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "hostId", "status", "dayNumber", "createdAt"]
+    },
+    "Player": {
+      "title": "Player",
+      "description": "A player in a game room",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "isHost": { "type": "boolean" },
+        "isAlive": { "type": "boolean" },
+        "role": { "type": "string" },
+        "team": { "type": "string" },
+        "joinedAt": { "type": "number" },
+        "isBot": { "type": "boolean" }
+      },
+      "required": ["id", "name", "isHost", "isAlive"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A text or voice chat message in a game room",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "content": { "type": "string" },
+        "channel": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "senderId", "senderName", "content", "channel", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Game rooms collection"
+    },
+    "/rooms/{roomId}/players/{playerId}": {
+      "schema": { "$ref": "#/entities/Player" },
+      "description": "Players in a room"
+    },
+    "/rooms/{roomId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Room chat messages"
+    }
+  }
+}

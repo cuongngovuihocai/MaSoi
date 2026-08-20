@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Patrick Hand', cursive, sans-serif;
+  --font-serif: 'Pangolin', cursive, sans-serif;
+  --font-mono: 'Dongle', sans-serif;
+  --font-pangolin: 'Pangolin', cursive, sans-serif;
+  --font-dongle: 'Dongle', sans-serif;
+  --font-patrick: 'Patrick Hand', cursive, sans-serif;
+}
+
+@layer base {
+  html, body {
+    font-family: 'Patrick Hand', cursive, sans-serif;
+    font-size: 1.15rem; /* ~18.5px base for clear handwriting legibility */
+    line-height: 1.4;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Pangolin', cursive, sans-serif;
+  }
+
+  button, input, select, textarea, label {
+    font-family: 'Patrick Hand', cursive, sans-serif;
+    font-size: max(15px, 1rem);
+  }
+}
+
+.font-pangolin {
+  font-family: 'Pangolin', cursive, sans-serif !important;
+}
+
+/* High-specificity Dongle & Mono font rules (minimum 20px across all screens & utility classes) */
+html body .font-dongle,
+html body .font-mono,
+html body [class*="font-dongle"],
+html body [class*="font-mono"] {
+  font-family: 'Dongle', sans-serif !important;
+  font-size: max(20px, 1.5rem) !important;
+  line-height: 1.1;
+}
+
+/* Ensure child elements inside Dongle/Mono containers also inherit at least 20px UNLESS explicitly styled with font-patrick or another font family */
+html body .font-dongle *:not(.font-patrick):not([class*="font-patrick"]):not(.font-pangolin),
+html body .font-mono *:not(.font-patrick):not([class*="font-patrick"]):not(.font-pangolin),
+html body [class*="font-dongle"] *:not(.font-patrick):not([class*="font-patrick"]):not(.font-pangolin),
+html body [class*="font-mono"] *:not(.font-patrick):not([class*="font-patrick"]):not(.font-pangolin) {
+  font-size: max(20px, 1em) !important;
+}
+
+/* Patrick Hand font rules (minimum 15px) */
+html body .font-patrick,
+html body [class*="font-patrick"] {
+  font-family: 'Patrick Hand', cursive, sans-serif !important;
+  font-size: max(15px, 1rem);
+}
+
+/* Enforce 15px minimum font size for non-dongle small text classes */
+:not(.font-dongle):not(.font-mono).text-xs,
+:not(.font-dongle):not(.font-mono).text-sm,
+:not(.font-dongle):not(.font-mono).text-\[8px\],
+:not(.font-dongle):not(.font-mono).text-\[9px\],
+:not(.font-dongle):not(.font-mono).text-\[10px\],
+:not(.font-dongle):not(.font-mono).text-\[11px\],
+:not(.font-dongle):not(.font-mono).text-\[12px\],
+:not(.font-dongle):not(.font-mono).text-\[13px\],
+:not(.font-dongle):not(.font-mono).text-\[14px\] {
+  font-size: max(15px, 0.9375rem);
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+}
+
+@keyframes flip3d {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: rotateY(90deg) scale(1.15);
+  }
+  100% {
+    transform: rotateY(180deg) scale(1);
+  }
+}
+
+.animate-flip-3d {
+  animation: flip3d 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}

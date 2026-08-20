@@ -1,0 +1,6 @@
+{
+  "name": "Trò Chơi Ma Sói Trực Tuyến",
+  "description": "Trò chơi Ma Sói online với Quản Trò tự động dẫn truyện bằng giọng nói, Chat thoại & Chat chữ, thẻ bài huyền bí dễ thương, kịch bản luật chơi chuẩn, PWA & Firebase real-time.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
