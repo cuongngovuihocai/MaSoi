@@ -65,13 +65,15 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const logoSrc = `${import.meta.env.BASE_URL || '/'}cards/card_back.png`.replace(/\/\//g, '/');
+
   return (
     <header className="sticky top-0 z-40 w-full bg-slate-950/40 border-b border-purple-500/30 backdrop-blur-xl px-4 py-3 flex items-center justify-between shadow-lg shadow-purple-950/20">
       {/* Brand Title */}
       <div className="flex items-center gap-2.5 group cursor-pointer">
         <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shadow-lg shadow-purple-950/80 ring-2 ring-purple-500/40 group-hover:ring-rose-400 group-hover:scale-110 transition-all duration-300 bg-slate-950 flex items-center justify-center shrink-0">
           <img
-            src="/cards/card_back.png"
+            src={logoSrc}
             alt="Ma Sói Logo"
             className="w-full h-full object-cover scale-140 group-hover:scale-155 transition-transform duration-300"
             referrerPolicy="no-referrer"
