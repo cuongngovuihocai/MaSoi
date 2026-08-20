@@ -11,7 +11,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'User',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Chỉ có sự đoàn kết mới cứu được ngôi làng này.',
+    quote: 'Thức đêm mới biết đêm dài. Sáng ra mới biết đến ai lên giàn',
   },
   werewolf: {
     id: 'werewolf',
@@ -23,7 +23,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 3,
     iconName: 'Wolf',
     badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    quote: 'Đêm nay, máu sẽ nhuộm đỏ ngõ làng...',
+    quote: 'Ta sẽ thăm từng người, sẽ đi thăm từng đường, sẽ vô thăm từng nhà',
   },
   seer: {
     id: 'seer',
@@ -35,7 +35,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 7,
     iconName: 'Eye',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Đôi mắt ta nhìn thấu màn đêm bóng tối.',
+    quote: 'Vải thưa sao che được mắt thánh?',
   },
   guard: {
     id: 'guard',
@@ -47,7 +47,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 6,
     iconName: 'Shield',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Tấm khiên này sẽ chở che cho kẻ vô tội.',
+    quote: 'Không sao mà, em đây rồi!',
   },
   witch: {
     id: 'witch',
@@ -59,7 +59,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 8,
     iconName: 'Sparkles',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Sự sống hay cái chết nằm trong tay ta.',
+    quote: 'Hy sinh một mạng. Cứu vạn sinh linh. Sao để vẹn tình?',
   },
   hunter: {
     id: 'hunter',
@@ -71,7 +71,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'Target',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Phát đạn cuối cùng sẽ mang kẻ thù cùng xuống mồ.',
+    quote: 'Trạng chết, Chúa cũng băng hà',
   },
   elder: {
     id: 'elder',
@@ -83,7 +83,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'Crown',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Sự khôn ngoan tích tụ qua nhiều năm tháng.',
+    quote: 'Kính già, già để tuổi cho',
   },
   cupid: {
     id: 'cupid',
@@ -95,7 +95,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 1,
     iconName: 'Heart',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Tình yêu vượt qua ranh giới của sự sống và cái chết.',
+    quote: 'Một mũi tên trúng hai đích, một cái chết xích hai người',
   },
   fox: {
     id: 'fox',
@@ -107,7 +107,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 9,
     iconName: 'Feather',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Mùi hương của lũ sói không thể qua mắt ta.',
+    quote: 'Ba người một hội, có tội bước ra',
   },
   piper: {
     id: 'piper',
@@ -119,7 +119,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 10,
     iconName: 'Music',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    quote: 'Hãy chìm đắm vào giai điệu dịu êm này...',
+    quote: 'Nhạc lên là nhảy, sáo thổi là bay!',
   },
   white_wolf: {
     id: 'white_wolf',
@@ -131,7 +131,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 5,
     iconName: 'Moon',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    quote: 'Ta không cần bầy đàn, ta là chúa tể đêm đen.',
+    quote: 'Ta là Một, là Riêng, là Thứ Nhất',
   },
   curse_wolf: {
     id: 'curse_wolf',
@@ -143,7 +143,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 4,
     iconName: 'Skull',
     badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    quote: 'Hãy gia nhập cùng bầy Sói!',
+    quote: 'Thêm một người bạn, bớt một dân làng',
   },
   dire_wolf: {
     id: 'dire_wolf',
@@ -155,7 +155,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 4,
     iconName: 'Zap',
     badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    quote: 'Sức mạnh tột cùng khi bầy đàn còn nguyên vẹn!',
+    quote: 'Bầy còn nguyên vẹn, ta còn ăn đêm!',
   },
   idiot: {
     id: 'idiot',
@@ -167,7 +167,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'Smile',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Tôi đâu biết gì đâu, sao lại treo cổ tôi?',
+    quote: 'Đã làm gì đâu?!! Đã chạm vào đâu?!!',
   },
   angel: {
     id: 'angel',
@@ -178,8 +178,8 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     ability: 'Nhiệm vụ duy nhất: Dụ làng vote treo cổ mình ngay trong Ngày 1. Nếu thành công, Thiên Thần thắng trận!',
     nightPriority: 99,
     iconName: 'Sparkle',
-    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-    quote: 'Hãy đưa ta về với thiên đường!',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    quote: 'Treo cổ một mạng, trắng tay cả làng',
   },
   scapegoat: {
     id: 'scapegoat',
@@ -191,7 +191,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'Ghost',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Số phận gánh chịu tai họa thay người khác.',
+    quote: 'Quýt làm Cam chịu!!!',
   },
   stuttering_judge: {
     id: 'stuttering_judge',
@@ -203,7 +203,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 99,
     iconName: 'Gavel',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Tòa án tuyên bố xét xử!',
+    quote: 'Gấp đôi nỗi sầu',
   },
   wild_child: {
     id: 'wild_child',
@@ -215,7 +215,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 1,
     iconName: 'Flame',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Nếu Mẹ nuôi ra đi, ta sẽ nhuộm máu ngôi làng này...',
+    quote: 'Đừng đụng vào Idol nhà tôi!!!',
   },
   wolf_man: {
     id: 'wolf_man',
@@ -227,7 +227,7 @@ export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
     nightPriority: 3,
     iconName: 'Wolf',
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    quote: 'Khoác lên mình lốt quỷ, nhưng trái tim vẫn hướng về dân làng.',
+    quote: 'Treo đầu dê, bán thịt chó',
   },
 };
 
@@ -564,7 +564,7 @@ export const NARRATOR_SCRIPTS = {
       ],
       witch: [
         'Mùi thảo mộc và độc dược phảng phất trong gió khuya... Dân làng hãy tiếp tục yên ngủ.',
-        `Độc dược và Giải dược, hai bình thuốc thần kỳ không nhãn. Uống nhầm một ngụm thuốc, cơn say theo cả đời...`,
+        `Độc dược và Giải dược, hai bình thuốc thần kỳ không nhãn. Uống nhầm một ngụm, cơn say theo cả đời...`,
         'Không gian tĩnh mịch rợn người... Hãy nhắm mắt và giữ im lặng.',
       ],
       piper: [
