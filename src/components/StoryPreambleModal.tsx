@@ -13,6 +13,7 @@ import {
   Mic,
   MicOff,
   Cpu,
+  Zap,
 } from 'lucide-react';
 
 interface StoryPreambleModalProps {
@@ -139,8 +140,20 @@ export const StoryPreambleModal: React.FC<StoryPreambleModalProps> = ({
   onProceedToCardReveal,
 }) => {
   const [speechEnabled, setSpeechEnabled] = useState(narrator.speechEnabled);
+  const [speechRate, setSpeechRate] = useState(narrator.speechRate || 1.25);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [activePartIndex, setActivePartIndex] = useState<number | null>(null);
+
+  const SPEED_OPTIONS = [1.0, 1.25, 1.4, 1.6];
+
+  const handleCycleSpeed = () => {
+    narrator.unlock();
+    const currentIndex = SPEED_OPTIONS.indexOf(speechRate);
+    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    const nextRate = SPEED_OPTIONS[nextIndex];
+    setSpeechRate(nextRate);
+    narrator.setSpeed(nextRate);
+  };
 
   const playerNamesList = players.map((p) => p.name).join(', ');
 
@@ -242,7 +255,18 @@ Hãy nhận lấy thẻ bài của mình. Nhớ giữ cho kỹ. Đừng tiết l
         </div>
 
         {/* Top Controls Header */}
-        <div className="flex items-center justify-end w-full mb-3">
+        <div className="flex items-center justify-end w-full mb-3 gap-2">
+          {speechEnabled && (
+            <button
+              onClick={handleCycleSpeed}
+              className="px-3 py-1.5 rounded-full border border-amber-500/40 bg-amber-950/60 text-amber-300 hover:bg-amber-900/80 hover:text-amber-200 transition-all flex items-center gap-1.5 text-xs sm:text-sm font-patrick font-medium shadow-md"
+              title={`Đổi tốc độ đọc Quản trò (Hiện tại: ${speechRate}x) - Bấm để chuyển 1.0x, 1.25x, 1.4x, 1.6x`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <span>Tốc độ: {speechRate}x</span>
+            </button>
+          )}
+
           <button
             id="btn-switch-voice-provider"
             onClick={handleToggleVoice}
