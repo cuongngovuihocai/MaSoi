@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
+import { soundEffects } from '../services/audioSynthesizer';
 import { Player, Team, RoleType, NightActionRecord } from '../types';
 import { ROLE_DEFINITIONS } from '../data/roles';
 import {
@@ -47,6 +48,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   const [activeTab, setActiveTab] = useState<'players' | 'timeline'>('players');
 
   useEffect(() => {
+    // Play celebratory victory fanfare sound effect
+    soundEffects.playVictoryFanfare();
+
     // Fire celebratory confetti
     confetti({
       particleCount: 120,
