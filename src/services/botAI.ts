@@ -13,7 +13,7 @@ export interface BotChatMessageQueueItem {
 
 /** 1. Tiên Tri chỉ điểm Ma Sói (12 câu đa dạng từ ẩn ý đến dứt khoát) */
 export const SEER_WOLF_ACCUSATIONS = [
-  (target: string) => `Đêm qua tôi ngửi thấy mùi Ma Sói rất nồng tỏa ra từ phía ${target}!`,
+  (target: string) => `Đêm qua tôi mơ thấy ${target} hóa Sói!`,
   (target: string) => `Trực giác mách bảo tôi ${target} không phải dân lành.`,
   (target: string) => `Tôi đã thấy năng lượng xấu toả ra từ ${target}.`,
   (target: string) => `Hành tung của ${target} hoàn toàn trùng khớp với loài Sói!`,
@@ -57,10 +57,13 @@ export const WOLF_SELF_DEFENSES = [
   `Tôi mà là Sói thì đã chọn cắn bạn rồi!`,
   `Có Sói nào mà đẹp trai như tôi không?`,
   `Vote ai cũng được, xin đừng vote tôi`,
+  `Con Sói có mấy chân tôi còn không biết. Sao lại bảo tôi là Sói!`,
   `Dĩ hoà vi quý, cứu một người hơn giết một người`,
   `Tối qua tôi chỉ đem hoa đến đặt ở gốc cây 55 thôi.`,
   `Tôi không biết ai là Sói, ai là dân. Chỉ biết tôi vô can.`,
   `Tôi là người lương thiện, không hề làm điều gì khuất tất!`,
+  `Tôi bị sâu răng, làm sao lại là Sói được`,
+  `Tôi ăn chay trường, không thích gặm xương. Sói gì mà Sói. Tào lao hết sức.`,
 ];
 
 /** 4. Ma Sói đồng bọn đánh lạc hướng sang người khác (12 câu) */
@@ -90,7 +93,7 @@ export const WOLF_PRETEND_DISCUSSIONS = [
   `Tôi ủng hộ việc vote những ai có biểu hiện gian dối, không thể nhân nhượng được!`,
   `Phe Sói chắc chắn đang ẩn nấp rất sâu, chúng ta phải quan sát từng cử chỉ nhỏ nhất!`,
   `Nếu ai đó là vai trò đặc biệt thì hãy cân nhắc thời điểm vàng để dẫn dắt dân làng nhé!`,
-  `Quyết tâm hôm nay làng ta phải đưa được ít nhất một con Sói lên giàn thiêu!`,
+  `Quyết tâm hôm nay phải đưa được ít nhất một con Sói lên giàn thiêu!`,
 ];
 
 /** 6. Bảo Vệ thảo luận / định hướng bảo vệ (10 câu) */
@@ -104,12 +107,13 @@ export const GUARD_DISCUSSIONS = [
   `Đêm nay chắc chắn sẽ là một đêm căng thẳng, hãy cùng nhau loại bỏ bớt hiểm họa ban ngày!`,
   `Tôi có niềm tin mãnh liệt vào chính nghĩa của Dân Làng, hôm nay vote thật chuẩn xác nhé!`,
   `Sói đang sợ hãi sự đoàn kết của chúng ta đấy, cùng nhau dồn phiếu nào anh em!`,
+  `Nắm tay nhau, cùng bước bên nhau, vì hạnh phúc nhân loại`,
   `Một ngày mới là một cơ hội mới, hãy triệt hạ móng vuốt của loài sói ngay trong hôm nay!`,
 ];
 
 /** 7. Phù Thủy thảo luận / phân tích tình hình đêm (10 câu) */
 export const WITCH_DISCUSSIONS = [
-  `Độc dược và thuốc cứu đều là con dao hai lưỡi, phù thuỷ cần tính toán thật tỉnh táo!`,
+  `Độc dược và giẩi dược đều là con dao hai lưỡi, phù thuỷ cần tính toán thật tỉnh táo!`,
   `Đêm qua làng ta đã trải qua nhiều biến động khó lường, hôm nay phải tìm ra kẻ chủ mưu!`,
   `Nếu Sói còn hung hăng thì sớm muộn cũng sẽ nếm mùi độc dược cay đắng thôi!`,
   `Tôi linh cảm đêm nay sẽ có kẻ phải trả giá đắt cho tội ác của mình!`,
@@ -124,14 +128,15 @@ export const WITCH_DISCUSSIONS = [
 /** 8. Thợ Săn răn đe / tuyên bố đanh thép (10 câu) */
 export const HUNTER_DISCUSSIONS = [
   `Họng súng của tôi luôn nạp sẵn đạn!`,
-  `Tôi khuyên các bạn cân nhắc kỹ. Một đổi một đấy!`,
-  `Nếu tôi có mệnh hệ gì, viên đạn cuối cùng chắc chắn sẽ găm thẳng vào tim con Sói đầu đàn!`,
+  `Tôi khuyên các bạn cân nhắc kỹ, đừng vote bừa. Mạng đổi mạng đấy!`,
+  `Nếu tôi có mệnh hệ gì, viên đạn cuối cùng chắc chắn sẽ găm thẳng vào người hại tôi!`,
   `Làng cứ mạnh dạn biểu quyết, có tôi bọc lót thì không việc gì phải sợ hãi bầy Sói!`,
-  `Ai là Sói thì tự biết điều đi, súng tôi không bao giờ bắn trượt đâu!`,
-  `Tôi đã nhắm sẵn một vài đối tượng trong tầm ngắm rồi, liệu hồn mà khai báo thật!`,
+  `Ai là Sói thì tự biết điều đi, đừng để tôi phải chịu tội oan!`,
+  `Tôi đã ghim sẵn một vài đối tượng rồi, liệu mà tránh tôi ra!`,
   `Một phát súng công lý sẽ giải quyết tất cả nếu tôi bị đẩy vào chân tường!`,
   `Đụng vào tôi là xác định đi tong một mạng, đừng có dại dột thử lửa!`,
   `Cứ thảo luận thoải mái đi anh em, miễn đừng vote tôi!`,
+  `Hại tôi thì các bạn cũng sẽ phải trả giá đắt`,
   `Thợ săn tôi đây không ngán ai đâu!`,
 ];
 
@@ -144,6 +149,7 @@ export const ELDER_DISCUSSIONS = [
   `Hãy suy xét bằng cái đầu lạnh, đừng để cảm xúc nhất thời biến chúng ta thành công cụ của Sói!`,
   `Kinh nghiệm của ta cho thấy những kẻ hung hăng nhất ban ngày thường có điều cần che giấu!`,
   `Ta tin tưởng vào trí tuệ của thế hệ trẻ trong làng, hãy chọn lọc thông tin thật thông thái!`,
+  `Còn nhớ ba mươi năm trước, làng cũng rơi vào tình huống ngặt nghèo này`,
   `Một quyết định sai lầm hôm nay có thể khiến cả ngôi làng chìm trong bóng tối vĩnh hằng!`,
   `Cứ phân tích từ từ, chân lý luôn thuộc về những người kiên định và chính trực!`,
   `Hãy giữ vững niềm tin, phe Dân Làng nhất định sẽ vượt qua kiếp nạn này!`,
@@ -155,11 +161,11 @@ export const SCAPEGOAT_DISCUSSIONS = [
   `Anh em bỏ phiếu tập trung vào một người thôi nhé, hòa phiếu là tôi gánh hết tội đấy hu hu!`,
   `Tôi không muốn làm kẻ thế mạng đâu, xin hãy cân nhắc kỹ đừng để phiếu bằng nhau!`,
   `Làng mình làm ơn thống nhất ý kiến đi, tôi sợ cảnh hòa phiếu lắm rồi!`,
-  `Quýt làm Cam chịu à?`,
-  `Tôi là người lương thiện mà, đừng để biến cố hòa phiếu cướp đi sinh mạng của tôi!`,
+  `Quýt làm Cam chịu`,
+  `Tôi là người lương thiện mà, đừng cướp đi sinh mạng của tôi!`,
   `Hãy vote có trách nhiệm nào mọi người, đừng phân vân 50/50 nguy hiểm lắm!`,
   `Xin đừng để số phận tôi kết thúc chỉ vì sự thiếu quyết đoán của cả làng!`,
-  `Tôi xin các bạn đấy, chọn một người đáng nghi nhất mà vote thôi, đừng chia phe ngang nhau!`,
+  `Tôi xin các bạn đấy, chọn một người đáng nghi nhất mà vote thôi, đừng chia phe nữa!`,
   `Mỗi lần đến giờ vote là tim tôi đập thình thịch, nhớ đừng để kết quả hòa nhé!`,
 ];
 
@@ -188,7 +194,7 @@ export const CUPID_LOVERS_DISCUSSIONS = [
   `Trái tim tôi mách bảo phải tin tưởng tuyệt đối vào người bạn đời của mình!`,
   `Hãy cùng nhau dọn sạch mọi hiểm họa để xây dựng lại một ngôi làng yên bình!`,
   `Sức mạnh của tình yêu có thể đánh bại bất kỳ thế lực hắc ám nào trong đêm tối!`,
-  `Chúng tôi sẽ kề vai sát cánh bảo vệ nhau đến hơi thở cuối cùng!`,
+  `Chúng ta hãy kề vai sát cánh bảo vệ nhau đến hơi thở cuối cùng!`,
 ];
 
 /** 13. Thiên Thần (Angel - 12 câu kích thích treo cổ Ngày 1 và tạo kịch tính) */
@@ -204,7 +210,7 @@ export const ANGEL_DISCUSSIONS = [
   `Hôm nay mà tôi không lên giàn thì thật là một thiếu sót lớn của làng ta!`,
   `Tôi xin nhận hết mọi tội lỗi về mình, mau mau cho tôi một vé về trời nào!`,
   `Ai dũng cảm thì cứ vote tôi một phiếu, đảm bảo ván này kết thúc trong ngỡ ngàng!`,
-  `Tôi cảm thấy đôi cánh của mình đang vẫy gọi, làng hãy giúp tôi toại nguyện đi!`,
+  `Đêm qua chính tôi dắt bầy sói vào làng cắn người!`,
 ];
 
 /** 14. Dân Làng hưởng ứng dồn phiếu theo Tiên Tri / manh mối (12 câu) */
@@ -228,17 +234,24 @@ export const GENERAL_DAY_DISCUSSIONS = [
   `Hôm nay chúng ta cần thảo luận thật kỹ, đừng để phí mất lá phiếu quý giá!`,
   `Đêm qua thật kinh hoàng... Lũ Sói ngày càng lộng hành và táo tợn rồi!`,
   `Mọi người hãy lên tiếng đi, ai im lặng nhất thường là Sói ẩn mình đấy!`,
-  `Phe Làng chúng ta cần đoàn kết lại, không được để nội bộ nghi kị lẫn nhau!`,
-  `Hôm nay có ai có manh mối hay linh cảm gì đặc biệt không, chia sẻ cho làng với!`,
+  `Dân làng chúng ta cần đoàn kết lại, không được nghi kị lẫn nhau!`,
+  `Hôm nay các huynh đệ có manh mối hay linh cảm gì đặc biệt không, chia sẻ cho làng với!`,
   `Thời gian không còn nhiều, chúng ta phải tập trung phân tích những người khả nghi nhất!`,
   `Mỗi mạng người ngã xuống là một bài học đắt giá, hôm nay phải bắt Sói đền tội!`,
   `Hãy quan sát kỹ từng lượt vote và phát ngôn từ các ngày trước để tìm ra quy luật!`,
   `Tôi tin rằng ánh sáng công lý sẽ sớm xua tan bóng tối u ám của bầy Sói!`,
   `Đừng để những lời ngụy biện làm lung lạc ý chí, hãy tin vào logic và chứng cứ!`,
-  `Trận chiến này đang bước vào giai đoạn then chốt, một sai lầm nhỏ cũng có thể thua cuộc!`,
+  `Cuộc chơi đang bước vào giai đoạn then chốt, một sai lầm nhỏ cũng có thể khiến chúng ta thua cuộc!`,
   `Hỡi những người con của làng, hãy cùng nhau đứng lên bảo vệ mái ấm của chúng ta!`,
-  `Ai có vai trò đặc biệt hãy cân nhắc dẫn dắt làng đúng thời điểm nhé!`,
+  `Bằng hữu nào có vai trò đặc biệt, hãy cân nhắc dẫn dắt làng đúng thời điểm nhé!`,
   `Càng về cuối trận Sói càng tinh vi, mọi người tuyệt đối không được chủ quan!`,
+  `Đêm qua tôi ngủ không ngon, nên xin phép không bàn luận gì!`,
+  `Tôi không muốn treo cổ ai cả!`,
+  `Sói thường có mắt to!`,
+  `Cẩn thận với thế lực thù địch nhé!`,
+  `Cần nhận diện rõ luận điệu nguỵ biện và vu cáo nhé`,
+  `Sao không sống hòa ái, mà cứ phải tìm cách treo cổ nhau!`,
+  `Thà giết nhầm còn hơn bỏ sót! Tăng lượt Vote mỗi ngày đi.`,
   `Hãy bỏ phiếu bằng cả lý trí và lương tâm để đưa làng ta đến bến bờ chiến thắng!`,
 ];
 
@@ -634,7 +647,8 @@ export function getSmartBotDefenseSpeech(targetPlayer: Player): string {
     const idiotDefenses = [
       "Hahaha tôi là Thằng Ngốcnè! Cứ treo cổ tôi đi!",
       "Tôi ngốc thật nhưng tôi là người tốt 100%! Treo tôi lên là làng mất lượt oan uổng nha!",
-      "Ủa sao lại kéo tôi lên đây? Tôi chỉ là một gã khờ vô hại thôi mà, đừng bắt nạt tôi chứ!"
+      "Ủa sao lại kéo tôi lên đây? Tôi chỉ là một gã khờ vô hại thôi mà, đừng bắt nạt tôi chứ!",
+      "Đã ai làm gì đâu? Có ai chạm vào đâu mà đổ lỗi cho ta???"
     ];
     return idiotDefenses[Math.floor(Math.random() * idiotDefenses.length)];
   }
@@ -694,7 +708,9 @@ export function getSmartBotDefenseSpeech(targetPlayer: Player): string {
     "Xin hãy giữ tôi lại! Tôi sẽ cống hiến hết mình cùng anh em tìm ra bầy Sói thực sự!",
     "Tôi chưa từng làm điều gì hại làng, một phiếu tha bổng của các bạn là cứu cả một sinh mạng trong sạch!",
     "Hãy nhìn thẳng vào mắt tôi, không có một chút tà tâm nào cả! Đừng trúng kế của kẻ thủ ác!",
-    "Nếu các bạn tha bổng cho tôi hôm nay, tôi hứa ngày mai sẽ vạch mặt kẻ đã vu khống tôi!"
+    "Nếu các bạn tha bổng cho tôi hôm nay, tôi hứa ngày mai sẽ vạch mặt kẻ đã vu khống tôi!",
+    "Tôi còn vợ già, ý lộn, mẹ già, vợ ốm, con thơ. Đừng hại tôi!",
+    "Nếu tôi chết mà cứu được cả làng, tôi sẵn sàng. Nhưng không cứu được đâu. Vậy nên tha cho tôi đi!"
   ];
 
   return generalDefenses[Math.floor(Math.random() * generalDefenses.length)];
