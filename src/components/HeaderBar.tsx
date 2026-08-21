@@ -58,7 +58,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
     narrator.speechEnabled = next;
     if (next) {
       narrator.unlock();
-      narrator.speak('Lời dẫn quản trò đã bật', 'chime');
+      narrator.speak('Lời dẫn quản trò đã kích hoạt', 'chime', 1000, undefined, undefined, true);
     } else {
       narrator.stop();
     }
