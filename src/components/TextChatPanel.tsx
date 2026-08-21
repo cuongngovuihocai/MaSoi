@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChatMessage, Player } from '../types';
-import { sendChatMessage } from '../services/firebase';
+import { clearRoomMessages, sendChatMessage } from '../services/firebase';
 import { VoiceChatBar } from './VoiceChatBar';
-import { MessageSquare, Volume2, ShieldAlert, Ghost, Send, ArrowDownUp, Clock } from 'lucide-react';
+import { MessageSquare, Volume2, ShieldAlert, Ghost, Send, ArrowDownUp, Clock, Trash2 } from 'lucide-react';
 
 interface TextChatPanelProps {
   roomId: string;
@@ -107,6 +107,12 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
+  const handleClearChat = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử tin nhắn trong phòng này?')) {
+      await clearRoomMessages(roomId);
+    }
+  };
+
   return (
     <div id="text-chat-panel" className="flex flex-col h-full bg-slate-900 border border-purple-500/20 rounded-2xl overflow-hidden shadow-2xl">
       {/* Channel Tabs & Sort Indicator */}
@@ -155,9 +161,22 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
             <ArrowDownUp className="w-3 h-3 text-amber-400" />
             <span>Mới nhất ở trên cùng</span>
           </span>
-          <span className="font-mono text-slate-500">
-            {filteredMessages.length} tin nhắn
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-slate-500">
+              {filteredMessages.length} tin nhắn
+            </span>
+            {currentPlayer.isHost && (
+              <button
+                type="button"
+                onClick={handleClearChat}
+                title="Xóa toàn bộ tin nhắn trong phòng"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-rose-400/80 hover:text-rose-300 hover:bg-rose-950/50 transition-colors"
+              >
+                <Trash2 className="w-2.5 h-2.5" />
+                <span>Xoá chat</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
