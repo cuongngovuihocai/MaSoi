@@ -1695,7 +1695,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const handlePlayerDeathConsequences = async (deadPlayer: Player): Promise<string[]> => {
     const extraDeadIds: string[] = [];
 
-    // 1. Lover Heartbreak
+    // 1. Check if dead player is Elder killed by friendly fire/witch/hunter
+    if (deadPlayer.role === 'elder' && !room.villagePowersLost) {
+      await updateRoomState(room.id, { villagePowersLost: true });
+      const elderPenaltyMsg = `⚡ GIÀ LÀNG ${deadPlayer.name.toUpperCase()} ĐÃ QUA ĐỜI! Các thần linh phẫn nộ: TOÀN BỘ DÂN LÀNG (Tiên Tri, Bảo Vệ, Phù Thủy, Con Cáo...) ĐÃ MẤT SẠCH NĂNG LỰC ĐẶC BIỆT!`;
+      announceNarrator(elderPenaltyMsg, 'death');
+      await sendChatMessage(room.id, {
+        senderId: 'system',
+        senderName: 'Quản Trò',
+        content: elderPenaltyMsg,
+        channel: 'global',
+        type: 'system',
+        createdAt: Date.now(),
+      });
+    }
+
+    // 2. Lover Heartbreak
     if (deadPlayer.loverId) {
       const lover = players.find((p) => p.id === deadPlayer.loverId && p.isAlive);
       if (lover) {
@@ -2584,6 +2599,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     // Trigger death consequences (Lovers heartbreak, Wild Child transformation)
     await handlePlayerDeathConsequences(targetPlayer);
+
+    // Elder penalty: If Elder was killed by Hunter (or any friendly fire / day execution), villagers lose all special powers
+    if (targetPlayer.role === 'elder' && !room.villagePowersLost) {
+      await updateRoomState(room.id, { villagePowersLost: true });
+      const elderPenaltyMsg = `⚡ GIÀ LÀNG ${targetPlayer.name.toUpperCase()} BỊ THỢ SĂN BẮN TRÚNG! Các thần linh phẫn nộ: TOÀN BỘ DÂN LÀNG (Tiên Tri, Bảo Vệ, Phù Thủy, Con Cáo...) ĐÃ MẤT SẠCH NĂNG LỰC ĐẶC BIỆT!`;
+      announceNarrator(elderPenaltyMsg, 'death');
+      await sendChatMessage(room.id, {
+        senderId: 'system',
+        senderName: 'Quản Trò',
+        content: elderPenaltyMsg,
+        channel: 'global',
+        type: 'system',
+        createdAt: Date.now(),
+      });
+    }
 
     soundEffects.playDeathBell();
 
