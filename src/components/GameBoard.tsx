@@ -1804,256 +1804,266 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Host Next Night Step Controller
   const handleAdvanceNightStep = async () => {
-    const validSteps = getValidNightSteps(room.dayNumber, room.rolesList, players);
-    const currentIndex = validSteps.indexOf(room.nightStep);
+    if (isProcessingAction) return;
+    setIsProcessingAction(true);
 
-    if (currentIndex >= 0 && currentIndex < validSteps.length - 1) {
-      const nextStep = validSteps[currentIndex + 1];
-      if (nextStep === 'done') {
-        // Resolve Night Actions for current dayNumber
-        const tonightActions = actions.filter((a) => a.dayNumber === room.dayNumber);
+    try {
+      const validSteps = getValidNightSteps(room.dayNumber, room.rolesList, players);
+      const currentIndex = validSteps.indexOf(room.nightStep);
 
-        // Process Cupid Lover link if Night 1
-        if (room.dayNumber === 1) {
-          const cupidLinks = tonightActions.filter((a) => a.actionType === 'cupid_link' && a.targetId);
-          if (cupidLinks.length >= 2) {
-            const p1 = cupidLinks[0].targetId;
-            const p2 = cupidLinks[1].targetId;
-            if (p1 && p2 && p1 !== p2) {
-              await updatePlayerState(room.id, p1, { loverId: p2 });
-              await updatePlayerState(room.id, p2, { loverId: p1 });
+      if (currentIndex >= 0 && currentIndex < validSteps.length - 1) {
+        const nextStep = validSteps[currentIndex + 1];
+        if (nextStep === 'done') {
+          // Resolve Night Actions for current dayNumber
+          const tonightActions = actions.filter((a) => a.dayNumber === room.dayNumber);
 
-              // Sync in-memory objects so same-night death consequences recognize the link!
-              const player1 = players.find((p) => p.id === p1);
-              const player2 = players.find((p) => p.id === p2);
-              if (player1) player1.loverId = p2;
-              if (player2) player2.loverId = p1;
+          // Process Cupid Lover link if Night 1
+          if (room.dayNumber === 1) {
+            const cupidLinks = tonightActions.filter((a) => a.actionType === 'cupid_link' && a.targetId);
+            if (cupidLinks.length >= 2) {
+              const p1 = cupidLinks[0].targetId;
+              const p2 = cupidLinks[1].targetId;
+              if (p1 && p2 && p1 !== p2) {
+                await updatePlayerState(room.id, p1, { loverId: p2 });
+                await updatePlayerState(room.id, p2, { loverId: p1 });
+
+                // Sync in-memory objects so same-night death consequences recognize the link!
+                const player1 = players.find((p) => p.id === p1);
+                const player2 = players.find((p) => p.id === p2);
+                if (player1) player1.loverId = p2;
+                if (player2) player2.loverId = p1;
+              }
             }
           }
-        }
 
-        // Tally Werewolf bite votes to determine unified wolf target
-        const wolfBites = tonightActions.filter((a) => a.actionType === 'wolf_bite');
-        let wolfTargetId: string | null = null;
-        if (wolfBites.length > 0) {
-          const biteCounts: Record<string, number> = {};
-          wolfBites.forEach((wb) => {
-            if (wb.targetId) {
-              biteCounts[wb.targetId] = (biteCounts[wb.targetId] || 0) + 1;
-            }
-          });
-          let maxBites = 0;
-          let topTargets: string[] = [];
-          Object.entries(biteCounts).forEach(([tId, count]) => {
-            if (count > maxBites) {
-              maxBites = count;
-              topTargets = [tId];
-            } else if (count === maxBites) {
-              topTargets.push(tId);
-            }
-          });
-          if (topTargets.length > 0) {
-            const isRandomWolfPick = topTargets.length > 1;
-            wolfTargetId = topTargets[Math.floor(Math.random() * topTargets.length)];
-
-            // Record system action for final wolf target and random status
-            await submitNightAction(room.id, {
-              actorId: 'system_wolf',
-              actorRole: 'werewolf',
-              targetId: wolfTargetId,
-              actionType: isRandomWolfPick ? 'wolf_final_kill_random' : 'wolf_final_kill',
-              dayNumber: room.dayNumber,
+          // Tally Werewolf bite votes to determine unified wolf target
+          const wolfBites = tonightActions.filter((a) => a.actionType === 'wolf_bite');
+          let wolfTargetId: string | null = null;
+          if (wolfBites.length > 0) {
+            const biteCounts: Record<string, number> = {};
+            wolfBites.forEach((wb) => {
+              if (wb.targetId) {
+                biteCounts[wb.targetId] = (biteCounts[wb.targetId] || 0) + 1;
+              }
             });
-          }
-        }
-
-        // Guard Protection
-        const guardAction = tonightActions.find((a) => a.actionType === 'guard_protect');
-        const protectedTargetId = guardAction?.targetId;
-
-        // Curse Wolf Action
-        const curseWolfAction = tonightActions.find((a) => a.actionType === 'curse_wolf_curse' && a.targetId);
-        const cursedTargetId = curseWolfAction?.targetId;
-
-        // Witch Heal
-        const witchHealAction = tonightActions.find((a) => a.actionType === 'witch_heal');
-        let healedTargetId: string | null = null;
-
-        if (witchHealAction) {
-          if (wolfTargetId && wolfTargetId === protectedTargetId) {
-            // Guard already saved the target! Refund Witch's Heal potion
-            await submitNightAction(room.id, {
-              actorId: witchHealAction.actorId,
-              actorRole: 'witch',
-              targetId: 'refunded',
-              actionType: 'witch_heal',
-              dayNumber: room.dayNumber,
-              isRefunded: true,
+            let maxBites = 0;
+            let topTargets: string[] = [];
+            Object.entries(biteCounts).forEach(([tId, count]) => {
+              if (count > maxBites) {
+                maxBites = count;
+                topTargets = [tId];
+              } else if (count === maxBites) {
+                topTargets.push(tId);
+              }
             });
-            const refundMsg = `🛡️ BẢO VỆ XUẤT SẮC: Đêm nay Bảo Vệ đã chở che thành công cho nạn nhân của Sói! Phù Thủy không tốn GIẢI DƯỢC và có thể dùng cho các đêm sau.`;
-            announceNarrator(refundMsg, 'chime');
-            await sendChatMessage(room.id, {
-              senderId: 'system',
-              senderName: 'Quản Trò',
-              content: refundMsg,
-              channel: 'global',
-              type: 'system',
-              createdAt: Date.now(),
-            });
-          } else if (wolfTargetId) {
-            healedTargetId = wolfTargetId;
-            // Record actual saved targetId for activity log
-            await submitNightAction(room.id, {
-              actorId: witchHealAction.actorId,
-              actorRole: 'witch',
-              targetId: healedTargetId,
-              actionType: 'witch_heal',
-              dayNumber: room.dayNumber,
-            });
-          }
-        }
+            if (topTargets.length > 0) {
+              const isRandomWolfPick = topTargets.length > 1;
+              wolfTargetId = topTargets[Math.floor(Math.random() * topTargets.length)];
 
-        // Witch Poison
-        const witchPoisonAction = tonightActions.find((a) => a.actionType === 'witch_poison');
-        const poisonedTargetId = witchPoisonAction?.targetId;
-
-        // White Wolf Kill
-        const whiteWolfAction = tonightActions.find((a) => a.actionType === 'white_wolf_kill' && a.targetId);
-        const whiteWolfTargetId = whiteWolfAction?.targetId;
-
-        // Dire Wolf Kill
-        const direWolfAction = tonightActions.find((a) => a.actionType === 'dire_wolf_kill' && a.targetId);
-        const direWolfTargetId = direWolfAction?.targetId;
-
-        const victimsSet = new Set<string>();
-
-        // Werewolf bite takes effect if target is NOT protected by Guard AND NOT saved by Witch Heal
-        if (wolfTargetId && wolfTargetId !== protectedTargetId && wolfTargetId !== healedTargetId) {
-          if (cursedTargetId && cursedTargetId === wolfTargetId) {
-            // Curse Wolf converts the victim into a Werewolf!
-            const cursedP = players.find((p) => p.id === wolfTargetId);
-            if (cursedP) {
-              await updatePlayerState(room.id, cursedP.id, {
-                role: 'werewolf',
-                team: 'werewolves',
-                isWolfTransformed: true,
+              // Record system action for final wolf target and random status
+              await submitNightAction(room.id, {
+                actorId: 'system_wolf',
+                actorRole: 'werewolf',
+                targetId: wolfTargetId,
+                actionType: isRandomWolfPick ? 'wolf_final_kill_random' : 'wolf_final_kill',
+                dayNumber: room.dayNumber,
               });
-              await updateRoomState(room.id, { newWolfAppearedDay: room.dayNumber });
-              const curseMsg = `🔮 LỜI NGUYỀN HUYỀN BÍ: Đã xuất hiện thêm 1 con Sói trong trấn.`;
-              announceNarrator(curseMsg, 'howl');
+            }
+          }
+
+          // Guard Protection
+          const guardAction = tonightActions.find((a) => a.actionType === 'guard_protect');
+          const protectedTargetId = guardAction?.targetId;
+
+          // Curse Wolf Action
+          const curseWolfAction = tonightActions.find((a) => a.actionType === 'curse_wolf_curse' && a.targetId);
+          const cursedTargetId = curseWolfAction?.targetId;
+
+          // Witch Heal
+          const witchHealAction = tonightActions.find((a) => a.actionType === 'witch_heal');
+          let healedTargetId: string | null = null;
+
+          if (witchHealAction) {
+            if (wolfTargetId && wolfTargetId === protectedTargetId) {
+              // Guard already saved the target! Refund Witch's Heal potion
+              await submitNightAction(room.id, {
+                actorId: witchHealAction.actorId,
+                actorRole: 'witch',
+                targetId: 'refunded',
+                actionType: 'witch_heal',
+                dayNumber: room.dayNumber,
+                isRefunded: true,
+              });
+              const refundMsg = `🛡️ BẢO VỆ XUẤT SẮC: Đêm nay Bảo Vệ đã chở che thành công cho nạn nhân của Sói! Phù Thủy không tốn GIẢI DƯỢC và có thể dùng cho các đêm sau.`;
+              announceNarrator(refundMsg, 'chime');
               await sendChatMessage(room.id, {
                 senderId: 'system',
                 senderName: 'Quản Trò',
-                content: curseMsg,
+                content: refundMsg,
                 channel: 'global',
                 type: 'system',
                 createdAt: Date.now(),
               });
+            } else if (wolfTargetId) {
+              healedTargetId = wolfTargetId;
+              // Record actual saved targetId for activity log
+              await submitNightAction(room.id, {
+                actorId: witchHealAction.actorId,
+                actorRole: 'witch',
+                targetId: healedTargetId,
+                actionType: 'witch_heal',
+                dayNumber: room.dayNumber,
+              });
             }
-          } else {
-            // Elder checks 2 lives
-            const elderP = players.find((p) => p.id === wolfTargetId && p.role === 'elder');
-            if (elderP && !elderP.elderExtraLifeUsed) {
-              await updatePlayerState(room.id, elderP.id, { elderExtraLifeUsed: true });
-              // Elder surviving 1st bite is kept secret (no public announcement) per rules
+          }
+
+          // Witch Poison
+          const witchPoisonAction = tonightActions.find((a) => a.actionType === 'witch_poison');
+          const poisonedTargetId = witchPoisonAction?.targetId;
+
+          // White Wolf Kill
+          const whiteWolfAction = tonightActions.find((a) => a.actionType === 'white_wolf_kill' && a.targetId);
+          const whiteWolfTargetId = whiteWolfAction?.targetId;
+
+          // Dire Wolf Kill
+          const direWolfAction = tonightActions.find((a) => a.actionType === 'dire_wolf_kill' && a.targetId);
+          const direWolfTargetId = direWolfAction?.targetId;
+
+          const victimsSet = new Set<string>();
+
+          // Werewolf bite takes effect if target is NOT protected by Guard AND NOT saved by Witch Heal
+          if (wolfTargetId && wolfTargetId !== protectedTargetId && wolfTargetId !== healedTargetId) {
+            if (cursedTargetId && cursedTargetId === wolfTargetId) {
+              // Curse Wolf converts the victim into a Werewolf!
+              const cursedP = players.find((p) => p.id === wolfTargetId);
+              if (cursedP) {
+                await updatePlayerState(room.id, cursedP.id, {
+                  role: 'werewolf',
+                  team: 'werewolves',
+                  isWolfTransformed: true,
+                });
+                await updateRoomState(room.id, { newWolfAppearedDay: room.dayNumber });
+                const curseMsg = `🔮 LỜI NGUYỀN HUYỀN BÍ: Đã xuất hiện thêm 1 con Sói trong trấn.`;
+                announceNarrator(curseMsg, 'howl');
+                await sendChatMessage(room.id, {
+                  senderId: 'system',
+                  senderName: 'Quản Trò',
+                  content: curseMsg,
+                  channel: 'global',
+                  type: 'system',
+                  createdAt: Date.now(),
+                });
+              }
             } else {
-              victimsSet.add(wolfTargetId);
+              // Elder checks 2 lives
+              const elderP = players.find((p) => p.id === wolfTargetId && p.role === 'elder');
+              if (elderP && !elderP.elderExtraLifeUsed) {
+                await updatePlayerState(room.id, elderP.id, { elderExtraLifeUsed: true });
+                // Elder surviving 1st bite is kept secret (no public announcement) per rules
+              } else {
+                victimsSet.add(wolfTargetId);
+              }
             }
           }
-        }
 
-        // Witch poison takes effect
-        if (poisonedTargetId) {
-          victimsSet.add(poisonedTargetId);
-        }
-
-        // White wolf kill takes effect
-        if (whiteWolfTargetId) {
-          victimsSet.add(whiteWolfTargetId);
-        }
-
-        // Dire wolf kill takes effect if not protected by Guard and not saved by Witch Heal
-        if (direWolfTargetId && direWolfTargetId !== protectedTargetId && direWolfTargetId !== healedTargetId) {
-          victimsSet.add(direWolfTargetId);
-        }
-
-        const victims = Array.from(victimsSet);
-        const allNightVictimsSet = new Set<string>(victims);
-
-        // Apply victims death
-        let hunterVictim: Player | null = null;
-        for (const vicId of victims) {
-          const vicPlayer = players.find((p) => p.id === vicId);
-          if (vicPlayer) {
-            let reason = 'Cái chết bí ẩn trong đêm';
-            if (vicId === wolfTargetId && vicId === poisonedTargetId) {
-              reason = 'Bị Ma Sói cắn & Phù Thủy đầu độc';
-            } else if (vicId === wolfTargetId) {
-              reason = 'Bị Ma Sói cắn';
-            } else if (vicId === poisonedTargetId) {
-              reason = 'Bị Phù Thủy đầu độc';
-            } else if (vicId === whiteWolfTargetId) {
-              reason = 'Bị Sói Trắng tiêu diệt';
-            } else if (vicId === direWolfTargetId) {
-              reason = 'Bị Sói Hùm cắn';
-            }
-
-            await updatePlayerState(room.id, vicId, {
-              isAlive: false,
-              deathReason: reason,
-              deathTiming: `Chết đêm ngày ${room.dayNumber}`,
-            });
-
-            // Trigger death consequences (Lovers, Wild Child, Wolf Cub)
-            const extraIds = await handlePlayerDeathConsequences(vicPlayer);
-            extraIds.forEach((id) => allNightVictimsSet.add(id));
-
-            if (vicPlayer.role === 'hunter') {
-              hunterVictim = vicPlayer;
-            }
+          // Witch poison takes effect
+          if (poisonedTargetId) {
+            victimsSet.add(poisonedTargetId);
           }
-        }
 
-        // Trigger Hunter ability if Hunter died tonight
-        if (hunterVictim) {
-          if (hunterVictim.isBot) {
-            const aliveTargets = players.filter((p) => p.isAlive && !allNightVictimsSet.has(p.id) && p.id !== hunterVictim!.id);
-            if (aliveTargets.length > 0) {
-              const botTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-              await updatePlayerState(room.id, botTarget.id, {
+          // White wolf kill takes effect
+          if (whiteWolfTargetId) {
+            victimsSet.add(whiteWolfTargetId);
+          }
+
+          // Dire wolf kill takes effect if not protected by Guard and not saved by Witch Heal
+          if (direWolfTargetId && direWolfTargetId !== protectedTargetId && direWolfTargetId !== healedTargetId) {
+            victimsSet.add(direWolfTargetId);
+          }
+
+          const victims = Array.from(victimsSet);
+          const allNightVictimsSet = new Set<string>(victims);
+
+          // Apply victims death
+          let hunterVictim: Player | null = null;
+          for (const vicId of victims) {
+            const vicPlayer = players.find((p) => p.id === vicId);
+            if (vicPlayer) {
+              let reason = 'Cái chết bí ẩn trong đêm';
+              if (vicId === wolfTargetId && vicId === poisonedTargetId) {
+                reason = 'Bị Ma Sói cắn & Phù Thủy đầu độc';
+              } else if (vicId === wolfTargetId) {
+                reason = 'Bị Ma Sói cắn';
+              } else if (vicId === poisonedTargetId) {
+                reason = 'Bị Phù Thủy đầu độc';
+              } else if (vicId === whiteWolfTargetId) {
+                reason = 'Bị Sói Trắng tiêu diệt';
+              } else if (vicId === direWolfTargetId) {
+                reason = 'Bị Sói Hùm cắn';
+              }
+
+              await updatePlayerState(room.id, vicId, {
                 isAlive: false,
-                deathReason: `Bị Thợ Săn ${hunterVictim.name} bắn gục`,
+                deathReason: reason,
                 deathTiming: `Chết đêm ngày ${room.dayNumber}`,
               });
-              allNightVictimsSet.add(botTarget.id);
-              const extraIds = await handlePlayerDeathConsequences(botTarget);
+
+              // Trigger death consequences (Lovers, Wild Child, Wolf Cub)
+              const extraIds = await handlePlayerDeathConsequences(vicPlayer);
               extraIds.forEach((id) => allNightVictimsSet.add(id));
+
+              if (vicPlayer.role === 'hunter') {
+                hunterVictim = vicPlayer;
+              }
             }
-          } else {
-            await updateRoomState(room.id, {
-              pendingHunterShot: {
-                hunterId: hunterVictim.id,
-                hunterName: hunterVictim.name,
-                reason: 'Bị hạ gục trong đêm',
-              },
-            });
           }
+
+          // Trigger Hunter ability if Hunter died tonight
+          if (hunterVictim) {
+            if (hunterVictim.isBot) {
+              const aliveTargets = players.filter((p) => p.isAlive && !allNightVictimsSet.has(p.id) && p.id !== hunterVictim!.id);
+              if (aliveTargets.length > 0) {
+                const botTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                await updatePlayerState(room.id, botTarget.id, {
+                  isAlive: false,
+                  deathReason: `Bị Thợ Săn ${hunterVictim.name} bắn gục`,
+                  deathTiming: `Chết đêm ngày ${room.dayNumber}`,
+                });
+                allNightVictimsSet.add(botTarget.id);
+                const extraIds = await handlePlayerDeathConsequences(botTarget);
+                extraIds.forEach((id) => allNightVictimsSet.add(id));
+              }
+            } else {
+              await updateRoomState(room.id, {
+                pendingHunterShot: {
+                  hunterId: hunterVictim.id,
+                  hunterName: hunterVictim.name,
+                  reason: 'Bị hạ gục trong đêm',
+                },
+              });
+            }
+          }
+
+          const nextDayNumber = room.dayNumber + 1;
+
+          await updateRoomState(room.id, {
+            status: 'day_announcement',
+            dayNumber: nextDayNumber,
+            lastNightVictimIds: Array.from(allNightVictimsSet),
+          });
+        } else {
+          await updateRoomState(room.id, { nightStep: nextStep });
         }
-
-        const nextDayNumber = room.dayNumber + 1;
-
-        await updateRoomState(room.id, {
-          status: 'day_announcement',
-          dayNumber: nextDayNumber,
-          lastNightVictimIds: Array.from(allNightVictimsSet),
-        });
       } else {
-        await updateRoomState(room.id, { nightStep: nextStep });
+        // Fallback transition to daytime if step unknown or done
+        const nextDayNumber = room.dayNumber + 1;
+        await updateRoomState(room.id, { status: 'day_announcement', dayNumber: nextDayNumber, lastNightVictimIds: [] });
       }
-    } else {
-      // Fallback transition to daytime if step unknown or done
-      const nextDayNumber = room.dayNumber + 1;
-      await updateRoomState(room.id, { status: 'day_announcement', dayNumber: nextDayNumber, lastNightVictimIds: [] });
+    } catch (err) {
+      console.error('Error in handleAdvanceNightStep:', err);
+      showToast('Có lỗi khi chuyển lượt đêm. Vui lòng thử lại.', 'error');
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
