@@ -13,6 +13,8 @@ import {
   batchJoinPlayers,
   batchUpdatePlayers,
   clearNightActionsAndVotes,
+  clearRoomForNewGame,
+  clearRoomMessages,
   deleteNightAction,
   leaveRoom,
   sendChatMessage,
@@ -1223,14 +1225,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           id: p.id,
           updates: {
             role: assignedRole,
-            team: rMeta.team,
+            team: rMeta?.team || 'villagers',
             isAlive: true,
+            deathReason: '',
+            deathTiming: '',
+            loverId: '',
+            fosterParentId: '',
+            isMuted: false,
+            isProtected: false,
+            isEnchanted: false,
+            hasBeenCurseWolfTransformed: false,
+            stutteringJudgeUsed: false,
+            witchHealUsed: false,
+            witchPoisonUsed: false,
+            voteCount: 0,
+            hasVoted: false,
           },
         };
       });
 
       await batchUpdatePlayers(room.id, playerUpdates);
-      await clearNightActionsAndVotes(room.id);
+      await clearRoomForNewGame(room.id);
+
+      // System notification welcoming players to the fresh match
+      await sendChatMessage(room.id, {
+        senderId: 'system',
+        senderName: 'Quản Trò',
+        content: '🎮 Ván chơi mới đã chính thức bắt đầu! Lịch sử trò chuyện ván trước đã được làm sạch.',
+        channel: 'global',
+        type: 'system',
+        createdAt: Date.now(),
+      });
 
       const validSteps = getValidNightSteps(1, presetRoles, assignedPlayers);
       const firstNightStep = validSteps[0] || 'werewolves';
@@ -1240,6 +1265,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         dayNumber: 1,
         nightStep: firstNightStep,
         phaseEndTime: Date.now() + 30000,
+        winner: undefined,
+        accusedPlayerId: null,
+        verdictFinished: false,
+        verdictResultText: null,
+        villagePowersLost: false,
+        judgeSecondVotingActive: false,
+        stutteringJudgeSignActive: false,
       });
     } catch (err) {
       console.error('Error starting match:', err);
@@ -4469,7 +4501,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           currentPlayerId={currentPlayer.id}
           onRematch={handleStartMatch}
           onReturnLobby={async () => {
-            await updateRoomState(room.id, { status: 'lobby' });
+            await clearRoomForNewGame(room.id);
+            await updateRoomState(room.id, {
+              status: 'lobby',
+              winner: undefined,
+              accusedPlayerId: null,
+              verdictFinished: false,
+              verdictResultText: null,
+              villagePowersLost: false,
+              judgeSecondVotingActive: false,
+              stutteringJudgeSignActive: false,
+            });
             if (onLeaveRoom) {
               onLeaveRoom();
             }
