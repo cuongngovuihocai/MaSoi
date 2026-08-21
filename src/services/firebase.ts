@@ -302,15 +302,47 @@ export async function deleteNightAction(roomId: string, action: NightActionRecor
   await deleteDoc(actionRef);
 }
 
+export async function clearRoomMessages(roomId: string) {
+  try {
+    const messagesCol = collection(db, 'rooms', roomId, 'messages');
+    const snap = await getDocs(messagesCol);
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn(`Error clearing messages for room ${roomId}:`, err);
+  }
+}
+
 export async function clearNightActionsAndVotes(roomId: string) {
-  const batch = writeBatch(db);
+  try {
+    const batch = writeBatch(db);
 
-  // Clear votes from previous discussion/voting rounds
-  const votesCol = collection(db, 'rooms', roomId, 'votes');
-  const votesSnap = await getDocs(votesCol);
-  votesSnap.forEach((d) => batch.delete(d.ref));
+    // Clear votes from previous discussion/voting rounds
+    const votesCol = collection(db, 'rooms', roomId, 'votes');
+    const votesSnap = await getDocs(votesCol);
+    votesSnap.forEach((d) => batch.delete(d.ref));
 
-  await batch.commit();
+    // Clear night actions
+    const actionsCol = collection(db, 'rooms', roomId, 'actions');
+    const actionsSnap = await getDocs(actionsCol);
+    actionsSnap.forEach((d) => batch.delete(d.ref));
+
+    await batch.commit();
+  } catch (err) {
+    console.warn(`Error clearing actions and votes for room ${roomId}:`, err);
+  }
+}
+
+export async function clearRoomForNewGame(roomId: string) {
+  try {
+    await clearRoomMessages(roomId);
+    await clearNightActionsAndVotes(roomId);
+  } catch (err) {
+    console.warn(`Error resetting room state for new game in room ${roomId}:`, err);
+  }
 }
 
 export async function deleteRoomCompletely(roomId: string) {
