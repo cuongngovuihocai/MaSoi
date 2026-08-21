@@ -20,8 +20,13 @@ class NarratorEngine {
   private synth: SpeechSynthesis | null = null;
   private voices: SpeechSynthesisVoice[] = [];
   private sequenceTimeouts: ReturnType<typeof setTimeout>[] = [];
+  private watchdogTimeout: ReturnType<typeof setTimeout> | null = null;
   private queue: QueueItem[] = [];
   private isSpeaking = false;
+  private isUnlocked = false;
+  // Crucial for iOS Safari & Android Chrome: Prevent GC from killing active utterance mid-speech
+  private activeUtterances: Set<SpeechSynthesisUtterance> = new Set();
+
   public speechEnabled = true;
   public soundEffectsEnabled = true;
   public useGoogleVoice = false; // Default to standard device/system voice
@@ -34,17 +39,51 @@ class NarratorEngine {
       if (this.synth.onvoiceschanged !== undefined) {
         this.synth.onvoiceschanged = () => this.initVoice();
       }
+
+      // Auto-unlock on first mobile touch/click
+      const handleUserGesture = () => {
+        this.unlock();
+      };
+      window.addEventListener('pointerdown', handleUserGesture, { passive: true });
+      window.addEventListener('touchstart', handleUserGesture, { passive: true });
+      window.addEventListener('click', handleUserGesture, { passive: true });
+    }
+  }
+
+  public unlock() {
+    soundEffects.unlock();
+    if (!this.synth) return;
+    try {
+      this.initVoice();
+      if (this.synth.paused) {
+        this.synth.resume();
+      }
+      if (!this.isUnlocked) {
+        // Play a silent, empty utterance to unlock iOS Safari Web Speech audio stream
+        const dummyUtterance = new SpeechSynthesisUtterance('');
+        dummyUtterance.volume = 0;
+        this.synth.speak(dummyUtterance);
+        this.isUnlocked = true;
+      }
+    } catch (e) {
+      // Ignore unlock errors
     }
   }
 
   private initVoice() {
     if (!this.synth) return;
-    this.voices = this.synth.getVoices();
+    try {
+      const v = this.synth.getVoices();
+      if (v && v.length > 0) {
+        this.voices = v;
+      }
+    } catch (e) {}
   }
 
   public getAvailableVoices(): VoiceOption[] {
     if (!this.synth) return [];
-    const all = this.synth.getVoices();
+    this.initVoice();
+    const all = this.voices.length > 0 ? this.voices : this.synth.getVoices();
     return all.map((v, i) => ({
       id: `${v.name}-${v.lang}-${i}`,
       name: v.name,
@@ -56,16 +95,26 @@ class NarratorEngine {
 
   public getSelectedVoice(): SpeechSynthesisVoice | null {
     if (!this.synth) return null;
-    const available = this.synth.getVoices();
+    this.initVoice();
+    const available = this.voices.length > 0 ? this.voices : this.synth.getVoices();
     if (available.length === 0) return null;
 
-    // Filter Vietnamese voices first
-    const viVoices = available.filter(
-      (v) => v.lang.toLowerCase().includes('vi') || v.name.toLowerCase().includes('vietnamese')
-    );
+    // Filter Vietnamese voices first (iOS names: Linh, An, etc.; Android names: Google Tiếng Việt, vi-vn, etc.)
+    const viVoices = available.filter((v) => {
+      const l = (v.lang || '').toLowerCase().replace('_', '-');
+      const n = (v.name || '').toLowerCase();
+      return (
+        l.startsWith('vi') ||
+        l.includes('vi-vn') ||
+        n.includes('vietnam') ||
+        n.includes('tiếng việt') ||
+        n.includes('linh') ||
+        n.includes('an') ||
+        n.includes('vi-vn')
+      );
+    });
 
     if (viVoices.length > 0) {
-      // Alternating between Google voice and device voice if requested
       const googleVi = viVoices.find((v) => v.name.toLowerCase().includes('google'));
       const deviceVi = viVoices.find((v) => !v.name.toLowerCase().includes('google'));
 
@@ -77,13 +126,8 @@ class NarratorEngine {
       return viVoices[this.voiceToggleCount % viVoices.length];
     }
 
-    // Fallback to any Google Voice or standard voice
-    const googleVoice = available.find((v) => v.name.toLowerCase().includes('google'));
-    if (googleVoice && this.useGoogleVoice) {
-      return googleVoice;
-    }
-
-    return available[0] || null;
+    // Do NOT return non-Vietnamese voice when speaking Vietnamese, return null so system uses native default TTS lang pack
+    return null;
   }
 
   public toggleVoiceType() {
@@ -105,7 +149,7 @@ class NarratorEngine {
       this.stop();
     }
 
-    // Avoid pushing duplicate items if identical to last queued item or currently playing item
+    // Avoid pushing duplicate items if identical to last queued item
     const textStr = Array.isArray(text) ? text.join(' ') : text;
     if (this.queue.length > 0) {
       const lastItem = this.queue[this.queue.length - 1];
@@ -131,6 +175,13 @@ class NarratorEngine {
     if (!this.speechEnabled && !this.soundEffectsEnabled) {
       this.queue = [];
       return;
+    }
+
+    // Try resuming if iOS Safari suspended synth
+    if (this.synth && this.synth.paused) {
+      try {
+        this.synth.resume();
+      } catch (e) {}
     }
 
     const item = this.queue.shift()!;
@@ -164,6 +215,10 @@ class NarratorEngine {
     }
 
     const finishCurrentItem = () => {
+      if (this.watchdogTimeout) {
+        clearTimeout(this.watchdogTimeout);
+        this.watchdogTimeout = null;
+      }
       item.onPartChange?.(null);
       this.isSpeaking = false;
       const timeout = setTimeout(() => {
@@ -232,7 +287,19 @@ class NarratorEngine {
           utterance.rate = 0.95; // Dramatic pace
           utterance.pitch = 0.95; // Mysterious tone
 
+          // Retain reference in Set to prevent GC in iOS WebKit / Chrome
+          this.activeUtterances.add(utterance);
+
+          const cleanup = () => {
+            if (this.watchdogTimeout) {
+              clearTimeout(this.watchdogTimeout);
+              this.watchdogTimeout = null;
+            }
+            this.activeUtterances.delete(utterance);
+          };
+
           utterance.onend = () => {
+            cleanup();
             currentIndex++;
             if (currentIndex < parts.length) {
               handlePartTransition();
@@ -241,7 +308,8 @@ class NarratorEngine {
             }
           };
 
-          utterance.onerror = () => {
+          utterance.onerror = (e) => {
+            cleanup();
             currentIndex++;
             if (currentIndex < parts.length) {
               handlePartTransition();
@@ -250,6 +318,22 @@ class NarratorEngine {
             }
           };
 
+          // Watchdog: In case mobile browser stalls or onend never fires
+          if (this.watchdogTimeout) clearTimeout(this.watchdogTimeout);
+          const estDuration = Math.max(4000, partText.length * 150);
+          this.watchdogTimeout = setTimeout(() => {
+            cleanup();
+            currentIndex++;
+            if (currentIndex < parts.length) {
+              handlePartTransition();
+            } else {
+              finishCurrentItem();
+            }
+          }, estDuration);
+
+          if (this.synth.paused) {
+            this.synth.resume();
+          }
           this.synth.speak(utterance);
         } catch (e) {
           finishCurrentItem();
@@ -265,10 +349,17 @@ class NarratorEngine {
   public stop() {
     this.queue = [];
     this.isSpeaking = false;
+    if (this.watchdogTimeout) {
+      clearTimeout(this.watchdogTimeout);
+      this.watchdogTimeout = null;
+    }
     this.sequenceTimeouts.forEach((t) => clearTimeout(t));
     this.sequenceTimeouts = [];
+    this.activeUtterances.clear();
     if (this.synth) {
-      this.synth.cancel();
+      try {
+        this.synth.cancel();
+      } catch (e) {}
     }
   }
 }
