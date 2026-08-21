@@ -216,6 +216,7 @@ Hãy nhận lấy thẻ bài của mình. Nhớ giữ cho kỹ. Đừng tiết l
   if (!isOpen) return null;
 
   const handleToggleVoice = () => {
+    narrator.unlock();
     const nextState = !narrator.speechEnabled;
     narrator.speechEnabled = nextState;
     setSpeechEnabled(nextState);
