@@ -2129,7 +2129,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     } else {
       const scapegoat = players.find((p) => p.isAlive && p.role === 'scapegoat');
       if (scapegoat) {
-        const sgMsg = `HÒA PHIẾU: Kẻ Thế Mạng ${scapegoat.name.toUpperCase()} đã hy sinh gánh tội thay cho làng!`;
+        const sgMsg = `HÒA PHIẾU: Kẻ Thế Mạng ${scapegoat.name.toUpperCase()} sẽ hy sinh gánh tội thay cho làng!`;
         announceNarrator(sgMsg, 'death');
         await sendChatMessage(room.id, {
           senderId: 'system',
@@ -2228,6 +2228,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   // Stuttering Judge Sign Trigger (Used after 1st verdict execution/pardon)
+    // Stuttering Judge Sign Trigger (Used to activate round 2 voting)
   const handleStutteringJudgeTrigger = async () => {
     if (room.villagePowersLost) return;
     const judge = players.find((p) => p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed);
@@ -2239,7 +2240,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       await clearNightActionsAndVotes(room.id);
 
       await updateRoomState(room.id, {
-        stutteringJudgeSignActive: false,
+        stutteringJudgeSignActive: true,
         judgeSecondVotingActive: true,
         status: 'day_discussion',
         phaseEndTime: Date.now() + (room.config?.discussionTimeSeconds ? room.config.discussionTimeSeconds * 1000 : 120000),
@@ -2248,7 +2249,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         verdictResultText: null,
       });
 
-      const judgeMsg = `Làng sẽ tiến hành biểu quyết bổ sung để chọn thêm người bị nghi ngờ là Sói!`;
+      soundEffects.playGavelStrike();
+      const judgeMsg = "⚖️ TÍN HIỆU TỪ QUAN TÒA: Quan Tòa Lắp Bắp đã ra hiệu gõ búa! Dân làng sẽ tiến hành thêm một vòng biểu quyết thứ 2 trong ngày hôm nay!";
       announceNarrator(judgeMsg, 'gavel');
       await sendChatMessage(room.id, {
         senderId: 'system',
@@ -2258,8 +2260,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         type: 'system',
         createdAt: Date.now(),
       });
+      showToast('⚖️ Đã kích hoạt tín hiệu Quan Tòa! Làng bước vào vòng biểu quyết lần 2.', 'success');
     } catch (err) {
       console.error('Error in handleStutteringJudgeTrigger:', err);
+      showToast('Không thể kích hoạt tín hiệu Quan Tòa.', 'error');
     } finally {
       setIsProcessingAction(false);
     }
@@ -2790,7 +2794,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-900/80 border border-white/10 font-mono font-bold whitespace-nowrap">
                 PHASE: {room.status.toUpperCase()}
               </span>
-              {room.status === 'day_discussion' && (
+              
+            {/* Quick Action Button for Stuttering Judge during Day */}
+            {currentPlayer.role === 'stuttering_judge' && isAlive && !currentPlayer.stutteringJudgeUsed && !room.judgeSecondVotingActive && !room.villagePowersLost && (room.status === 'day_discussion' || room.status === 'day_voting' || room.status === 'day_defense') && (
+              <button
+                onClick={handleStutteringJudgeTrigger}
+                disabled={isProcessingAction}
+                title="Gõ búa ra hiệu cho Quản Trò tổ chức 2 lần bỏ phiếu treo cổ trong ngày hôm nay"
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-700 to-amber-600 hover:from-purple-600 hover:to-amber-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-amber-400/50 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Gavel className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
+                <span>GÕ BÚA RA HIỆU (2 Lần Bỏ Phiếu)</span>
+              </button>
+            )}
+
+            {room.status === 'day_discussion' && (
                 <div
                   className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-xs font-mono font-bold shadow-inner transition-all whitespace-nowrap ${
                     phaseTimeLeft <= 10
