@@ -406,32 +406,107 @@ class SoundSynthesizer {
     this.playWolfHowl();
   }
 
-  // Fanfare victory
+  // Fanfare victory (backward compatible alias)
   playVictoryChime() {
+    this.playVictoryFanfare();
+  }
+
+  // Majestic & Celebratory Victory Fanfare (Trumpets herald + Timpani punch + Shimmering Fireworks/Chimes)
+  playVictoryFanfare() {
     const ctx = this.getContext();
     if (!ctx) return;
 
     try {
       const now = ctx.currentTime;
-      const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
-      notes.forEach((freq, index) => {
-        const startTime = now + index * 0.15;
-        const osc = ctx.createOscillator();
+
+      // 1. Deep Timpani / Victory Bass Impact
+      const bassOsc = ctx.createOscillator();
+      const bassGain = ctx.createGain();
+      bassOsc.type = 'sine';
+      bassOsc.frequency.setValueAtTime(120, now);
+      bassOsc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+      bassGain.gain.setValueAtTime(0.35, now);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      bassOsc.connect(bassGain);
+      bassGain.connect(ctx.destination);
+      bassOsc.start(now);
+      bassOsc.stop(now + 0.85);
+
+      // 2. Triumphant Brass Fanfare Sequence (Herald: C4 -> E4 -> G4 -> C5, then triplet G4 G4 G4 -> High C5 + E5 + G5 sustain)
+      const fanfareMotif = [
+        { freq: 392.0, start: 0.0, dur: 0.16, vol: 0.18 }, // G4
+        { freq: 523.25, start: 0.18, dur: 0.16, vol: 0.2 }, // C5
+        { freq: 659.25, start: 0.36, dur: 0.16, vol: 0.22 }, // E5
+        { freq: 783.99, start: 0.54, dur: 0.38, vol: 0.26 }, // G5 (held)
+
+        // Triplet fanfare strike
+        { freq: 783.99, start: 0.96, dur: 0.1, vol: 0.22 }, // G5
+        { freq: 783.99, start: 1.08, dur: 0.1, vol: 0.22 }, // G5
+        { freq: 783.99, start: 1.2, dur: 0.1, vol: 0.24 }, // G5
+
+        // Grand Triumphant Chord Hold (C5 + E5 + G5 + C6)
+        { freq: 523.25, start: 1.34, dur: 1.8, vol: 0.2 }, // C5
+        { freq: 659.25, start: 1.34, dur: 1.8, vol: 0.2 }, // E5
+        { freq: 783.99, start: 1.34, dur: 1.8, vol: 0.24 }, // G5
+        { freq: 1046.5, start: 1.34, dur: 2.0, vol: 0.26 }, // C6
+      ];
+
+      fanfareMotif.forEach(({ freq, start, dur, vol }) => {
+        const startTime = now + start;
+
+        // Rich brass combo: Sawtooth with low-pass filter + slight triangle body
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
         const gain = ctx.createGain();
 
-        osc.type = 'triangle';
-        osc.frequency.value = freq;
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(freq, startTime);
 
-        gain.gain.setValueAtTime(0.15, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(freq * 1.002, startTime); // Slight chorus detune
 
-        osc.connect(gain);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(freq * 3.5, startTime);
+
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(vol, startTime + 0.03); // Quick crisp brass attack
+        gain.gain.setValueAtTime(vol * 0.85, startTime + dur * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.start(startTime);
-        osc.stop(startTime + 0.9);
+        osc1.start(startTime);
+        osc2.start(startTime);
+        osc1.stop(startTime + dur + 0.05);
+        osc2.stop(startTime + dur + 0.05);
       });
-    } catch (e) {}
+
+      // 3. Sparkling Celebration Magic Bells / Fireworks Chimes (Cascade around 1.34s)
+      const sparkleFreqs = [1046.5, 1318.5, 1567.98, 1760.0, 2093.0, 2637.0]; // C6, E6, G6, A6, C7, E7
+      sparkleFreqs.forEach((freq, idx) => {
+        const sparkleTime = now + 1.4 + idx * 0.08;
+        const sOsc = ctx.createOscillator();
+        const sGain = ctx.createGain();
+
+        sOsc.type = 'sine';
+        sOsc.frequency.setValueAtTime(freq, sparkleTime);
+
+        sGain.gain.setValueAtTime(0.09, sparkleTime);
+        sGain.gain.exponentialRampToValueAtTime(0.0001, sparkleTime + 0.6);
+
+        sOsc.connect(sGain);
+        sGain.connect(ctx.destination);
+
+        sOsc.start(sparkleTime);
+        sOsc.stop(sparkleTime + 0.65);
+      });
+    } catch (e) {
+      // Audio fallback
+    }
   }
 }
 
