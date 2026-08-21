@@ -1,6 +1,39 @@
 class SoundSynthesizer {
   private ctx: AudioContext | null = null;
   public enabled = true;
+  private isUnlocked = false;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.unlock();
+      };
+      window.addEventListener('pointerdown', unlockAudio, { passive: true });
+      window.addEventListener('touchstart', unlockAudio, { passive: true });
+      window.addEventListener('click', unlockAudio, { passive: true });
+    }
+  }
+
+  public unlock() {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      if (!this.isUnlocked && ctx) {
+        // Play a very short, silent buffer to wake up iOS Safari / Mobile audio engine
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        this.isUnlocked = true;
+      }
+    } catch (e) {
+      // Ignored
+    }
+  }
 
   private getContext(): AudioContext | null {
     if (!this.enabled) return null;
