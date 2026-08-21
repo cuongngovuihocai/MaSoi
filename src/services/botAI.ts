@@ -289,20 +289,38 @@ export function getSmartWerewolfTarget(
   dayNumber: number
 ): Player | null {
   const aliveNonWolves = alivePlayers.filter(
-    (p) => p.team !== 'werewolves' && !p.role.includes('wolf')
+    (p) => p.team !== 'werewolves' && !p.role.includes('wolf') && p.isAlive
   );
   if (aliveNonWolves.length === 0) return null;
 
-  // Check if another wolf has already picked a target tonight
-  const existingWolfBite = actions.find(
-    (a) =>
-      (a.actorRole?.includes('wolf') || a.actionType === 'wolf_bite') &&
-      a.dayNumber === dayNumber &&
-      a.targetId
+  // Check all werewolf bite actions tonight
+  const tonightWolfBites = actions.filter(
+    (a) => a.actionType === 'wolf_bite' && a.dayNumber === dayNumber && a.targetId
   );
 
-  if (existingWolfBite && aliveNonWolves.some((p) => p.id === existingWolfBite.targetId)) {
-    return aliveNonWolves.find((p) => p.id === existingWolfBite.targetId) || null;
+  if (tonightWolfBites.length > 0) {
+    // Count votes among wolves
+    const voteCounts: Record<string, number> = {};
+    tonightWolfBites.forEach((wb) => {
+      if (wb.targetId && aliveNonWolves.some((p) => p.id === wb.targetId)) {
+        voteCounts[wb.targetId] = (voteCounts[wb.targetId] || 0) + 1;
+      }
+    });
+
+    // Find the target with most votes
+    let topTargetId: string | null = null;
+    let maxVotes = 0;
+    Object.entries(voteCounts).forEach(([tId, count]) => {
+      if (count > maxVotes) {
+        maxVotes = count;
+        topTargetId = tId;
+      }
+    });
+
+    if (topTargetId) {
+      const topTarget = aliveNonWolves.find((p) => p.id === topTargetId);
+      if (topTarget) return topTarget;
+    }
   }
 
   // Otherwise pick random alive non-wolf
