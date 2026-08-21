@@ -2720,7 +2720,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         status: 'day_voting',
         phaseEndTime: Date.now() + votingMs,
       });
-      const forceMsg = '⚡ Quản Trò đã chuyển sang giai đoạn Bỏ Phiếu! Toàn thể dân làng hãy bắt đầu bỏ phiếu treo cổ!';
+      const forceMsg = '⚡ Chủ phòng đã kết thúc thảo luận! Toàn thể dân làng hãy bắt đầu bỏ phiếu treo cổ!';
       announceNarrator(forceMsg, 'gavel');
       await sendChatMessage(room.id, {
         senderId: 'system',
@@ -3028,7 +3028,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <button
                   onClick={handleHostForceVoting}
                   disabled={isProcessingAction}
-                  title="Quản trò chuyển ngay sang giai đoạn Bỏ Phiếu Treo Cổ mà không cần chờ hết thời gian thảo luận"
+                  title="Chủ phòng kết thúc thảo luận và chuyển ngay sang giai đoạn Bỏ Phiếu Treo Cổ"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-purple-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isProcessingAction ? (
@@ -3036,7 +3036,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   ) : (
                     <Play className="w-3.5 h-3.5 fill-current text-amber-300" />
                   )}
-                  <span>⚡ Bỏ Phiếu Ngay (Quản Trò)</span>
+                  <span>⚡ Kết Thúc Thảo Luận (Chủ Phòng)</span>
                 </button>
               )}
 
@@ -3045,7 +3045,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <button
                   onClick={handleTallyVotes}
                   disabled={isProcessingAction}
-                  title="Quản trò kết thúc và chốt kết quả bỏ phiếu ngay lập tức"
+                  title="Chủ phòng kết thúc và chốt kết quả bỏ phiếu ngay lập tức"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-rose-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isProcessingAction ? (
@@ -3053,7 +3053,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   ) : (
                     <Gavel className="w-3.5 h-3.5 text-amber-300" />
                   )}
-                  <span>⚡ Chốt Phiếu Ngay (Quản Trò)</span>
+                  <span>⚡ Chốt Phiếu Ngay (Chủ Phòng)</span>
                 </button>
               )}
 
@@ -3074,7 +3074,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <button
                   onClick={handleTallyVerdict}
                   disabled={isProcessingAction}
-                  title="Quản trò chốt quyết định Treo Cổ hoặc Tha Bổng ngay lập tức"
+                  title="Chủ phòng chốt quyết định Treo Cổ hoặc Tha Bổng ngay lập tức"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-indigo-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isProcessingAction ? (
@@ -3082,7 +3082,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   ) : (
                     <Gavel className="w-3.5 h-3.5 text-amber-300" />
                   )}
-                  <span>⚡ Chốt Phán Quyết (Quản Trò)</span>
+                  <span>⚡ Chốt Phán Quyết (Chủ Phòng)</span>
                 </button>
               )}
             </>
@@ -3094,7 +3094,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <button
                 onClick={handleToggleEarlyVoteReady}
                 disabled={isProcessingAction || (!isAlive && earlyVoteHumans.length > 0)}
-                title="Bỏ phiếu sớm để kết thúc thời gian thảo luận khi toàn bộ người chơi sẵn sàng"
+                title="Bấm đồng ý kết thúc thời gian thảo luận khi toàn bộ người chơi sẵn sàng"
                 className={`px-4 py-2 rounded-xl font-bold text-xs shadow-lg flex items-center gap-1.5 border transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
                   hasEarlyVoteReady
                     ? 'bg-emerald-600 border-emerald-400 text-white ring-2 ring-emerald-500/50'
@@ -3109,7 +3109,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   <Clock className="w-3.5 h-3.5" />
                 )}
                 <span>
-                  {hasEarlyVoteReady ? '✓ Đã Đồng Ý' : 'Bỏ Phiếu Sớm'}{' '}
+                  {hasEarlyVoteReady ? '✓ Đã Đồng Ý Kết Thúc' : 'Kết Thúc Thảo Luận'}{' '}
                   ({earlyVoteCount}/{earlyVoteTotal} người chơi)
                 </span>
               </button>
@@ -3119,61 +3119,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
 
       {/* Interactive Action & Voting Panel (Placed immediately below Phase Banner for convenient access) */}
-      {/* -1. Day Discussion Interactive Panel */}
-      {room.status === 'day_discussion' && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950/60 to-slate-950 border border-indigo-500/40 space-y-3 text-center shadow-2xl animate-fadeIn">
-          <div className="flex items-center justify-center gap-2 text-amber-300 font-serif font-bold text-sm sm:text-base">
-            <MessageSquare className="w-5 h-5 text-amber-400 animate-pulse" />
-            <span>HỘI ĐỒNG DÂN LÀNG THẢO LUẬN</span>
-          </div>
-
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Dân làng hãy trao đổi qua Khung Chat hoặc Micro để tìm ra kẻ tình nghi. Khi đã thảo luận xong, hãy bấm <strong className="text-amber-300">"Bỏ Phiếu Sớm"</strong> để cùng chuyển sang giai đoạn Bỏ Phiếu Treo Cổ!
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-            {/* Consensus button for ALL players */}
-            <button
-              onClick={handleToggleEarlyVoteReady}
-              disabled={isProcessingAction || (!isAlive && earlyVoteHumans.length > 0)}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-xl flex items-center gap-2 border transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
-                hasEarlyVoteReady
-                  ? 'bg-emerald-600 border-emerald-400 text-white ring-2 ring-emerald-500/50'
-                  : 'bg-gradient-to-r from-amber-600 via-rose-600 to-rose-700 hover:from-amber-500 hover:to-rose-600 text-white border-amber-400/40'
-              }`}
-            >
-              {isProcessingAction ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : hasEarlyVoteReady ? (
-                <CheckCircle className="w-4 h-4 text-amber-300" />
-              ) : (
-                <Clock className="w-4 h-4" />
-              )}
-              <span>
-                {hasEarlyVoteReady ? '✓ Bạn Đã Đồng Ý Bỏ Phiếu Sớm' : 'Bỏ Phiếu Sớm'}{' '}
-                ({earlyVoteCount}/{earlyVoteTotal} người chơi)
-              </span>
-            </button>
-
-            {/* Host Admin Instant Force Advance */}
-            {isHost && (
-              <button
-                onClick={handleHostForceVoting}
-                disabled={isProcessingAction}
-                title="Quản trò chuyển ngay sang giai đoạn Bỏ Phiếu Treo Cổ mà không cần chờ hết thời gian thảo luận"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm shadow-xl flex items-center gap-2 border border-purple-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {isProcessingAction ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4 fill-current text-amber-300" />
-                )}
-                <span>⚡ Bỏ Phiếu Ngay (Quản Trò)</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* 0. Day Defense Interactive Panel */}
       {room.status === 'day_defense' && (() => {
@@ -4344,7 +4289,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-purple-400/40 hover:scale-105 transition-all disabled:opacity-50"
                 >
                   {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current text-amber-300" />}
-                  <span>⚡ Bỏ Phiếu Ngay (Quản Trò)</span>
+                  <span>⚡ Kết Thúc Thảo Luận (Chủ Phòng)</span>
                 </button>
               )}
 
@@ -4365,7 +4310,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   <Clock className="w-3.5 h-3.5" />
                 )}
                 <span>
-                  {hasEarlyVoteReady ? '✓ Đã Đồng Ý' : 'Bỏ Phiếu Sớm'}{' '}
+                  {hasEarlyVoteReady ? '✓ Đã Đồng Ý Kết Thúc' : 'Kết Thúc Thảo Luận'}{' '}
                   ({earlyVoteCount}/{earlyVoteTotal} người chơi)
                 </span>
               </button>
