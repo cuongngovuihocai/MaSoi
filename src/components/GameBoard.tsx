@@ -2707,6 +2707,35 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   };
 
+  // Host Direct Admin Action: Force advance from discussion to voting immediately
+  const handleHostForceVoting = async () => {
+    if (isProcessingAction) return;
+    setIsProcessingAction(true);
+    try {
+      setIsEarlyVotingModalOpen(false);
+      const votingMs = (room.config?.votingTimeSeconds || 30) * 1000;
+      await clearNightActionsAndVotes(room.id);
+      await updateRoomState(room.id, {
+        status: 'day_voting',
+        phaseEndTime: Date.now() + votingMs,
+      });
+      const forceMsg = '⚡ Quản Trò đã chuyển sang giai đoạn Bỏ Phiếu! Toàn thể dân làng hãy bắt đầu bỏ phiếu treo cổ!';
+      announceNarrator(forceMsg, 'gavel');
+      await sendChatMessage(room.id, {
+        senderId: 'system',
+        senderName: 'Quản Trò',
+        content: forceMsg,
+        channel: 'global',
+        type: 'system',
+        createdAt: Date.now(),
+      });
+    } catch (err) {
+      console.error('Error forcing voting phase by host:', err);
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
   // 2. Action 2: Tally Votes ("Chốt Bỏ Phiếu" in day_voting)
   const tallyEligible = players.filter((p) => p.isAlive && !p.idiotSaved);
   const tallyHumans = tallyEligible.filter((p) => !p.isBot);
@@ -2992,6 +3021,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </button>
             )}
 
+            {/* Host Admin Action: Force Advance to Voting */}
+            {isHost && room.status === 'day_discussion' && (
+              <button
+                onClick={handleHostForceVoting}
+                disabled={isProcessingAction}
+                title="Quản trò chuyển ngay sang giai đoạn Bỏ Phiếu Treo Cổ mà không cần chờ hết thời gian thảo luận"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-purple-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isProcessingAction ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current text-amber-300" />
+                )}
+                <span>⚡ Chuyển Sang Bỏ Phiếu (Quản Trò)</span>
+              </button>
+            )}
+
+            {/* Consensus Early Vote button for all players */}
             {room.status === 'day_discussion' && (
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -3018,14 +3065,49 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
             )}
 
-            {room.status === 'day_defense' && (
+            {/* Host Admin Action: Force Tally Votes in day_voting */}
+            {isHost && room.status === 'day_voting' && (
               <button
-                onClick={() => updateRoomState(room.id, { status: 'day_verdict' })}
+                onClick={handleTallyVotes}
                 disabled={isProcessingAction}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg flex items-center gap-1 disabled:opacity-50"
+                title="Quản trò kết thúc và chốt kết quả bỏ phiếu ngay lập tức"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-rose-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
               >
-                {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                Đưa Ra Quyết Định Cuối Cùng
+                {isProcessingAction ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Gavel className="w-3.5 h-3.5 text-amber-300" />
+                )}
+                <span>⚡ Chốt Phiếu Ngay (Quản Trò)</span>
+              </button>
+            )}
+
+            {/* Host Admin Action: Advance from day_defense to day_verdict */}
+            {isHost && room.status === 'day_defense' && (
+              <button
+                onClick={() => updateRoomState(room.id, { status: 'day_verdict', phaseEndTime: null })}
+                disabled={isProcessingAction}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg flex items-center gap-1 border border-indigo-400/40 disabled:opacity-50"
+              >
+                {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gavel className="w-3.5 h-3.5 text-amber-300" />}
+                Chuyển Sang Phán Quyết ➔
+              </button>
+            )}
+
+            {/* Host Admin Action: Force Tally Verdict in day_verdict */}
+            {isHost && room.status === 'day_verdict' && !room.verdictFinished && (
+              <button
+                onClick={handleTallyVerdict}
+                disabled={isProcessingAction}
+                title="Quản trò chốt quyết định Treo Cổ hoặc Tha Bổng ngay lập tức"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-indigo-400/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isProcessingAction ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Gavel className="w-3.5 h-3.5 text-amber-300" />
+                )}
+                <span>⚡ Chốt Phán Quyết (Quản Trò)</span>
               </button>
             )}
             </>
@@ -4188,7 +4270,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </span>
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2">
               <button
                 onClick={() => setIsEarlyVotingModalOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-white/10 transition-all"
@@ -4196,9 +4278,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 Hủy Bỏ
               </button>
 
+              {isHost && (
+                <button
+                  onClick={handleHostForceVoting}
+                  disabled={isProcessingAction}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-purple-400/40 hover:scale-105 transition-all disabled:opacity-50"
+                >
+                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current text-amber-300" />}
+                  <span>⚡ Bỏ Phiếu Ngay (Quản Trò)</span>
+                </button>
+              )}
+
               <button
                 onClick={handleToggleEarlyVoteReady}
-                disabled={isProcessingAction || !isAlive}
+                disabled={isProcessingAction || (!isAlive && earlyVoteHumans.length > 0)}
                 className={`px-4 py-2 rounded-xl font-bold text-xs shadow-lg flex items-center gap-1.5 transition-all border hover:scale-105 disabled:opacity-50 ${
                   hasEarlyVoteReady
                     ? 'bg-emerald-600 border-emerald-400 text-white ring-2 ring-emerald-500/50'
@@ -4210,7 +4303,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 ) : hasEarlyVoteReady ? (
                   <CheckCircle className="w-3.5 h-3.5 text-amber-300" />
                 ) : (
-                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <Clock className="w-3.5 h-3.5" />
                 )}
                 <span>
                   {hasEarlyVoteReady ? '✓ Đã Đồng Ý' : 'Bỏ Phiếu Sớm'}{' '}
