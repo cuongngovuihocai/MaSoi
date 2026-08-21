@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ChatMessage, Player } from '../types';
 import { sendChatMessage } from '../services/firebase';
 import { VoiceChatBar } from './VoiceChatBar';
-import { MessageSquare, Volume2, ShieldAlert, Ghost, Send, Mic } from 'lucide-react';
+import { MessageSquare, Volume2, ShieldAlert, Ghost, Send, ArrowDownUp, Clock } from 'lucide-react';
 
 interface TextChatPanelProps {
   roomId: string;
@@ -21,7 +21,7 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
     !currentPlayer.isAlive ? 'ghost' : 'global'
   );
   const [inputText, setInputText] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const isWerewolf = currentPlayer.role.includes('wolf') || currentPlayer.team === 'werewolves';
   const isDead = !currentPlayer.isAlive;
@@ -54,8 +54,11 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
     }
   }, [isDead, isNight, isWerewolf]);
 
+  // Scroll to top when new messages arrive so the newest message is always visible instantly
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [messages, activeChannel]);
 
   const handleSendText = async (e: React.FormEvent) => {
@@ -76,19 +79,21 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
     });
   };
 
-  const filteredMessages = messages.filter((m) => {
-    // Security check: non-werewolves cannot view werewolf channel messages
-    if (m.channel === 'werewolf' && !isWerewolf) {
-      return false;
-    }
-    // Security check: alive players cannot view ghost channel messages
-    if (m.channel === 'ghost' && !isDead) {
-      return false;
-    }
+  const filteredMessages = messages
+    .filter((m) => {
+      // Security check: non-werewolves cannot view werewolf channel messages
+      if (m.channel === 'werewolf' && !isWerewolf) {
+        return false;
+      }
+      // Security check: alive players cannot view ghost channel messages
+      if (m.channel === 'ghost' && !isDead) {
+        return false;
+      }
 
-    // Tab filter: only display messages meant for the currently active tab
-    return m.channel === activeChannel;
-  });
+      // Tab filter: only display messages meant for the currently active tab
+      return m.channel === activeChannel;
+    })
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Newest first (descending by time)
 
   const playVoiceClip = (audioDataUri?: string | null) => {
     if (!audioDataUri) return;
@@ -96,66 +101,102 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
     audio.play().catch((e) => console.warn('Audio play blocked:', e));
   };
 
+  const formatTime = (ts?: number) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
   return (
     <div id="text-chat-panel" className="flex flex-col h-full bg-slate-900 border border-purple-500/20 rounded-2xl overflow-hidden shadow-2xl">
-      {/* Channel Tabs */}
-      <div className="flex items-center gap-1 p-2 bg-slate-950 border-b border-slate-800">
-        <button
-          onClick={() => setActiveChannel('global')}
-          className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-            activeChannel === 'global'
-              ? 'bg-purple-900/60 text-purple-300 border border-purple-500/30'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" /> Kênh Làng
-        </button>
-
-        {isWerewolf && (
+      {/* Channel Tabs & Sort Indicator */}
+      <div className="flex flex-col bg-slate-950 border-b border-slate-800">
+        <div className="flex items-center gap-1 p-2">
           <button
-            onClick={() => setActiveChannel('werewolf')}
+            onClick={() => setActiveChannel('global')}
             className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              activeChannel === 'werewolf'
-                ? 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
-                : 'text-rose-400/60 hover:text-rose-300'
+              activeChannel === 'global'
+                ? 'bg-purple-900/60 text-purple-300 border border-purple-500/30'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <ShieldAlert className="w-3.5 h-3.5" /> Hang Sói
+            <MessageSquare className="w-3.5 h-3.5" /> Kênh Làng
           </button>
-        )}
 
-        {isDead && (
-          <button
-            onClick={() => setActiveChannel('ghost')}
-            className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              activeChannel === 'ghost'
-                ? 'bg-stone-900 text-purple-300 border border-purple-500/50'
-                : 'text-purple-400/70 hover:text-purple-300'
-            }`}
-          >
-            <Ghost className="w-3.5 h-3.5" /> Kênh Tâm Linh
-          </button>
-        )}
+          {isWerewolf && (
+            <button
+              onClick={() => setActiveChannel('werewolf')}
+              className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                activeChannel === 'werewolf'
+                  ? 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
+                  : 'text-rose-400/60 hover:text-rose-300'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5" /> Hang Sói
+            </button>
+          )}
+
+          {isDead && (
+            <button
+              onClick={() => setActiveChannel('ghost')}
+              className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                activeChannel === 'ghost'
+                  ? 'bg-stone-900 text-purple-300 border border-purple-500/50'
+                  : 'text-purple-400/70 hover:text-purple-300'
+              }`}
+            >
+              <Ghost className="w-3.5 h-3.5" /> Kênh Tâm Linh
+            </button>
+          )}
+        </div>
+
+        <div className="px-2.5 py-1 bg-slate-900/60 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+          <span className="flex items-center gap-1 text-purple-400 font-semibold">
+            <ArrowDownUp className="w-3 h-3 text-amber-400" />
+            <span>Mới nhất ở trên cùng</span>
+          </span>
+          <span className="font-mono text-slate-500">
+            {filteredMessages.length} tin nhắn
+          </span>
+        </div>
       </div>
 
-      {/* Messages List */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-2 text-xs">
+      {/* Messages List - Newest on Top */}
+      <div ref={chatContainerRef} className="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs">
         {filteredMessages.length === 0 ? (
           <div className="text-center text-slate-500 py-8">
             Chưa có tin nhắn nào trong kênh này...
           </div>
         ) : (
-          filteredMessages.map((msg) => {
+          filteredMessages.map((msg, index) => {
             const isMe = msg.senderId === currentPlayer.id;
             const isSystem = msg.type === 'system' || msg.type === 'narrator';
+            const isNewest = index === 0;
 
             if (isSystem) {
               return (
                 <div
                   key={msg.id}
-                  className="p-2 rounded-xl bg-purple-950/30 border border-purple-500/20 text-purple-300 text-[11px] italic text-center"
+                  className={`p-2.5 rounded-xl border text-[11px] text-center space-y-1 transition-all ${
+                    isNewest
+                      ? 'bg-purple-950/60 border-purple-400/50 text-purple-200 shadow-md ring-1 ring-purple-500/30'
+                      : 'bg-purple-950/30 border-purple-500/20 text-purple-300 italic'
+                  }`}
                 >
-                  📣 Quản trò: {msg.content}
+                  <div className="flex items-center justify-center gap-1.5 font-bold text-[10px] text-amber-300">
+                    <span>📣 QUẢN TRÒ</span>
+                    {msg.createdAt && (
+                      <span className="font-mono text-[9px] text-slate-400 font-normal">
+                        ({formatTime(msg.createdAt)})
+                      </span>
+                    )}
+                    {isNewest && (
+                      <span className="px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-extrabold text-[8px] uppercase tracking-wider">
+                        Mới
+                      </span>
+                    )}
+                  </div>
+                  <div>{msg.content}</div>
                 </div>
               );
             }
@@ -165,15 +206,34 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
                 key={msg.id}
                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
               >
-                <div className="text-[10px] text-slate-400 font-medium mb-0.5 px-1">
-                  {msg.senderName} {msg.senderRole ? `(${msg.senderRole})` : ''}
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium mb-0.5 px-1">
+                  <span className={isMe ? 'text-purple-300 font-bold' : 'text-slate-300'}>
+                    {msg.senderName} {msg.senderRole ? `(${msg.senderRole})` : ''}
+                  </span>
+                  {msg.createdAt && (
+                    <span className="font-mono text-[9px] text-slate-500 flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {formatTime(msg.createdAt)}
+                    </span>
+                  )}
+                  {isNewest && (
+                    <span className="px-1 py-0.2 rounded bg-purple-500 text-white font-extrabold text-[8px]">
+                      MỚI
+                    </span>
+                  )}
                 </div>
 
                 <div
-                  className={`p-2.5 rounded-2xl max-w-[85%] break-words shadow-md ${
+                  className={`p-2.5 rounded-2xl max-w-[85%] break-words shadow-md transition-all ${
                     isMe
-                      ? 'bg-purple-600 text-white rounded-tr-none'
-                      : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none'
+                      ? `bg-purple-600 text-white rounded-tr-none ${
+                          isNewest ? 'ring-2 ring-purple-400/50 shadow-purple-900/50' : ''
+                        }`
+                      : `bg-slate-950 border text-slate-200 rounded-tl-none ${
+                          isNewest
+                            ? 'border-purple-500/60 ring-1 ring-purple-500/30 bg-slate-900'
+                            : 'border-slate-800'
+                        }`
                   }`}
                 >
                   {msg.type === 'voice' ? (
@@ -192,7 +252,6 @@ export const TextChatPanel: React.FC<TextChatPanelProps> = ({
             );
           })
         )}
-        <div ref={chatEndRef} />
       </div>
 
       {/* Push-To-Talk Voice recorder */}
