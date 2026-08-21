@@ -23,6 +23,15 @@ import {
 } from '../services/firebase';
 import { narrator } from '../services/narratorEngine';
 import { soundEffects } from '../services/audioSynthesizer';
+import {
+  getSmartSeerTarget,
+  getSmartWerewolfTarget,
+  getSmartGuardTarget,
+  getSeerKnowledge,
+  generateBotDayDiscussionDialogues,
+  getSmartBotNominationTarget,
+  getSmartBotVerdictChoice,
+} from '../services/botAI';
 import { CardArt } from './CardArt';
 import { CardRevealModal } from './CardRevealModal';
 import { StoryPreambleModal } from './StoryPreambleModal';
@@ -124,6 +133,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [minPlayersModalOpen, setMinPlayersModalOpen] = useState(false);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState<number>(0);
   const [hasReminded9Min, setHasReminded9Min] = useState<boolean>(false);
+  const botDiscussionTrackerRef = useRef<string>('');
 
   // Reset discussion state & flags on phase change
   useEffect(() => {
@@ -741,8 +751,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         if (hunterP?.isBot) {
           const aliveTargets = players.filter((p) => p.isAlive && p.id !== hunterP.id);
           if (aliveTargets.length > 0) {
-            const t = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-            handleHunterShoot(t.id);
+            // Check if Seer has identified an alive wolf
+            const aliveSeers = players.filter((p) => p.isAlive && p.role === 'seer');
+            let chosenTarget: Player | null = null;
+            for (const s of aliveSeers) {
+              const { foundWolves } = getSeerKnowledge(s.id, players, actions);
+              const targetWolf = foundWolves.find((w) => w.isAlive && w.id !== hunterP.id);
+              if (targetWolf) {
+                chosenTarget = targetWolf;
+                break;
+              }
+            }
+            if (!chosenTarget) {
+              chosenTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+            }
+            handleHunterShoot(chosenTarget.id);
           } else {
             updateRoomState(room.id, { pendingHunterShot: null });
           }
@@ -810,13 +833,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             (a) => a.actorId === bot.id && a.actionType === 'wolf_bite' && a.dayNumber === room.dayNumber
           );
           if (!hasVoted) {
-            const targets = aliveNonWolves;
-            if (targets.length > 0) {
-              const t = targets[Math.floor(Math.random() * targets.length)];
+            const target = getSmartWerewolfTarget(bot, alivePlayers, actions, room.dayNumber);
+            if (target) {
               submitNightAction(room.id, {
                 actorId: bot.id,
                 actorRole: bot.role,
-                targetId: t.id,
+                targetId: target.id,
                 actionType: 'wolf_bite',
                 dayNumber: room.dayNumber,
               });
@@ -868,18 +890,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             (a) => a.actorId === bot.id && a.actionType === 'guard_protect' && a.dayNumber === room.dayNumber
           );
           if (!hasActed) {
-            const lastGuardAction = actions.find(
-              (a) => a.actionType === 'guard_protect' && a.dayNumber === room.dayNumber - 1
-            );
-            const prevTargetId = lastGuardAction?.targetId;
-            const validTargets = alivePlayers.filter((p) => p.id !== prevTargetId);
-            const pool = validTargets.length > 0 ? validTargets : alivePlayers;
-            const t = pool[Math.floor(Math.random() * pool.length)];
-            if (t) {
+            const target = getSmartGuardTarget(bot, alivePlayers, actions, room.dayNumber);
+            if (target) {
               submitNightAction(room.id, {
                 actorId: bot.id,
                 actorRole: bot.role,
-                targetId: t.id,
+                targetId: target.id,
                 actionType: 'guard_protect',
                 dayNumber: room.dayNumber,
               });
@@ -890,12 +906,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             (a) => a.actorId === bot.id && a.actionType === 'seer_inspect' && a.dayNumber === room.dayNumber
           );
           if (!hasActed) {
-            const t = alivePlayers.filter((p) => p.id !== bot.id)[0];
-            if (t) {
+            const target = getSmartSeerTarget(bot, alivePlayers, actions);
+            if (target) {
               submitNightAction(room.id, {
                 actorId: bot.id,
                 actorRole: bot.role,
-                targetId: t.id,
+                targetId: target.id,
                 actionType: 'seer_inspect',
                 dayNumber: room.dayNumber,
               });
@@ -1051,15 +1067,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
 
       // Bots execute their night actions automatically, but night step transitions ONLY occur when players click Next.
+    } else if (room.status === 'day_discussion') {
+      // Trigger intelligent conversational chat for Bots during daytime discussion
+      const discussionKey = `${room.id}_day_${room.dayNumber}_${room.judgeSecondVotingActive ? 'round2' : 'round1'}`;
+      if (botDiscussionTrackerRef.current !== discussionKey) {
+        botDiscussionTrackerRef.current = discussionKey;
+        const dialogueQueue = generateBotDayDiscussionDialogues(
+          players,
+          actions,
+          room.dayNumber,
+          room.lastNightVictimIds
+        );
+        dialogueQueue.forEach((item) => {
+          setTimeout(async () => {
+            try {
+              await sendChatMessage(room.id, {
+                senderId: item.botId,
+                senderName: item.botName,
+                content: item.content,
+                channel: 'global',
+                type: 'text',
+                createdAt: Date.now(),
+              });
+            } catch (err) {
+              console.error('Error sending bot chat dialogue:', err);
+            }
+          }, item.delayMs);
+        });
+      }
     } else if (room.status === 'day_voting') {
-      // Auto-bot votes (Excluding Idiot who was saved from voting and from being targeted)
+      // Auto-bot smart nomination votes (Excluding Idiot who was saved from voting and from being targeted)
       const bots = alivePlayers.filter((p) => p.isBot && !p.idiotSaved);
       bots.forEach((bot) => {
         const hasVoted = votes.some((v) => v.voterId === bot.id && v.type === 'nominate');
         if (!hasVoted) {
-          const candidates = alivePlayers.filter((p) => p.id !== bot.id && !p.idiotSaved);
-          if (candidates.length > 0) {
-            const target = candidates[Math.floor(Math.random() * candidates.length)];
+          const target = getSmartBotNominationTarget(bot, alivePlayers, actions, players);
+          if (target) {
             submitVote(room.id, {
               voterId: bot.id,
               targetId: target.id,
@@ -1069,12 +1112,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       });
     } else if (room.status === 'day_verdict') {
-      // Auto-bot verdict votes (Excluding Idiot who was saved)
+      // Auto-bot smart verdict votes (Excluding Idiot who was saved)
       const bots = alivePlayers.filter((p) => p.isBot && !p.idiotSaved);
+      const accusedPlayer = players.find((p) => p.id === room.accusedPlayerId);
       bots.forEach((bot) => {
         const hasVoted = votes.some((v) => v.voterId === bot.id && v.type === 'verdict');
-        if (!hasVoted) {
-          const choice = Math.random() > 0.4 ? 'execute' : 'pardon';
+        if (!hasVoted && accusedPlayer) {
+          const choice = getSmartBotVerdictChoice(bot, accusedPlayer, actions, players);
           submitVote(room.id, {
             voterId: bot.id,
             targetId: choice,
@@ -1083,7 +1127,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       });
     }
-  }, [room.status, room.nightStep, actions.length, votes.length]);
+  }, [room.status, room.nightStep, actions.length, votes.length, room.dayNumber, room.judgeSecondVotingActive]);
 
   // Bot Management Handlers
   const handleAddBots = async (count: number) => {
