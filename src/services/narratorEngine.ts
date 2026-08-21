@@ -101,6 +101,7 @@ class NarratorEngine {
   public speechEnabled = true;
   public soundEffectsEnabled = true;
   public preferOnlineVietnamese = true;
+  public speechRate: number = 1.25; // Snappy, lively, articulate rate (default 1.25x)
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -289,7 +290,21 @@ class NarratorEngine {
         const audio = new Audio();
         this.currentAudio = audio;
         audio.preload = 'auto';
+        audio.playbackRate = this.speechRate;
+        audio.defaultPlaybackRate = this.speechRate;
         audio.src = url;
+
+        // Ensure playbackRate sticks when metadata loads or playback starts
+        audio.onloadedmetadata = () => {
+          try {
+            audio.playbackRate = this.speechRate;
+          } catch (e) {}
+        };
+        audio.onplay = () => {
+          try {
+            audio.playbackRate = this.speechRate;
+          } catch (e) {}
+        };
 
         let finished = false;
         const handleDone = () => {
@@ -341,7 +356,7 @@ class NarratorEngine {
       if (chosenVoice) {
         utterance.voice = chosenVoice;
       }
-      utterance.rate = 1.0;
+      utterance.rate = this.speechRate;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
@@ -366,7 +381,7 @@ class NarratorEngine {
       };
 
       if (this.watchdogTimeout) clearTimeout(this.watchdogTimeout);
-      const estDuration = Math.max(3500, cleanText.length * 150);
+      const estDuration = Math.max(3000, (cleanText.length * 150) / this.speechRate);
       this.watchdogTimeout = setTimeout(() => {
         cleanup();
         onComplete();
@@ -427,7 +442,7 @@ class NarratorEngine {
       this.isSpeaking = false;
       const timeout = setTimeout(() => {
         this.processQueue();
-      }, 300);
+      }, 150);
       this.sequenceTimeouts.push(timeout);
     };
 
@@ -461,9 +476,9 @@ class NarratorEngine {
 
             scheduleSequence(() => {
               speakNextPart();
-            }, 600);
-          }, 800);
-        }, 300);
+            }, 180);
+          }, 240);
+        }, 120);
       };
 
       const speakNextPart = () => {
@@ -534,6 +549,16 @@ class NarratorEngine {
     if (this.synth) {
       try {
         this.synth.cancel();
+      } catch (e) {}
+    }
+  }
+
+  public setSpeed(rate: number) {
+    this.speechRate = Math.max(0.75, Math.min(2.0, rate));
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.playbackRate = this.speechRate;
+        this.currentAudio.defaultPlaybackRate = this.speechRate;
       } catch (e) {}
     }
   }
