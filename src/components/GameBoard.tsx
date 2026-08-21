@@ -79,6 +79,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   currentPlayer,
   onLeaveRoom,
 }) => {
+  // Custom In-App Toast Notification (Replaces intrusive browser alert dialogs)
+  const [toastNotification, setToastNotification] = useState<{
+    text: string;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    id: number;
+  } | null>(null);
+
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = useCallback((text: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastNotification({ text, type, id: Date.now() });
+    toastTimerRef.current = setTimeout(() => {
+      setToastNotification(null);
+    }, 4500);
+  }, []);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [seerResult, setSeerResult] = useState<string | null>(null);
@@ -320,11 +338,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Handlers for Witch Potions
   const handleToggleWitchHeal = async () => {
     if (room.villagePowersLost) {
-      alert('Dân làng đã treo cổ Già Làng! Phù Thủy đã mất toàn bộ năng lực.');
+      showToast('Dân làng đã treo cổ Già Làng! Phù Thủy đã mất toàn bộ năng lực.');
       return;
     }
     if (hasUsedHealInPast) {
-      alert('Bạn đã sử dụng Bình Thuốc Cứu ở đêm trước rồi!');
+      showToast('Bạn đã sử dụng Bình Thuốc Cứu ở đêm trước rồi!');
       return;
     }
 
@@ -336,7 +354,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         actionType: 'witch_heal',
         dayNumber: room.dayNumber,
       });
-      alert('Đã hủy sử dụng Bình Thuốc Cứu.');
+      showToast('Đã hủy sử dụng Bình Thuốc Cứu.');
     } else {
       await submitNightAction(room.id, {
         actorId: currentPlayer.id,
@@ -346,7 +364,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         dayNumber: room.dayNumber,
       });
       soundEffects.playChimeBell();
-      alert('Đã kích hoạt Bình Thuốc Cứu! Phép thuật sẽ tự động cứu nạn nhân bị Ma Sói cắn đêm nay.');
+      showToast('Đã kích hoạt Bình Thuốc Cứu! Phép thuật sẽ tự động cứu nạn nhân bị Ma Sói cắn đêm nay.');
     }
   };
 
@@ -358,16 +376,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       actionType: 'witch_poison',
       dayNumber: room.dayNumber,
     });
-    alert('Đã hủy sử dụng Bình Thuốc Độc.');
+    showToast('Đã hủy sử dụng Bình Thuốc Độc.');
   };
 
   const handleToggleCurseWolf = async () => {
     if (hasUsedCurseWolfInPast) {
-      alert('Bạn đã sử dụng lời nguyền ở đêm trước rồi!');
+      showToast('Bạn đã sử dụng lời nguyền ở đêm trước rồi!');
       return;
     }
     if (!tonightWolfBitePlayer) {
-      alert('Đêm nay phe Ma Sói chưa thống nhất chọn con mồi nào để nguyền rủa!');
+      showToast('Đêm nay phe Ma Sói chưa thống nhất chọn con mồi nào để nguyền rủa!');
       return;
     }
     if (isCurseActiveTonight) {
@@ -378,7 +396,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         actionType: 'curse_wolf_curse',
         dayNumber: room.dayNumber,
       });
-      alert('Đã hủy lời nguyền.');
+      showToast('Đã hủy lời nguyền.');
     } else {
       await submitNightAction(room.id, {
         actorId: currentPlayer.id,
@@ -388,7 +406,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         dayNumber: room.dayNumber,
       });
       soundEffects.playHowl();
-      alert(`Đã kích hoạt Lời Nguyền! Nạn nhân ${tonightWolfBitePlayer.name} sẽ bị biến thành Ma Sói mới đêm nay!`);
+      showToast(`Đã kích hoạt Lời Nguyền! Nạn nhân ${tonightWolfBitePlayer.name} sẽ bị biến thành Ma Sói mới đêm nay!`);
     }
   };
 
@@ -1199,12 +1217,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     if (step === 'seer') {
       if (currentPlayer.role !== 'seer') {
-        alert(`Hệ thống đang tương tác riêng với Tiên Tri. Bạn là ${myRoleName}, hãy giữ im lặng!`);
+        showToast(`Hệ thống đang tương tác riêng với Tiên Tri. Bạn là ${myRoleName}, hãy giữ im lặng!`);
         return;
       }
 
       if (room.villagePowersLost) {
-        alert('⚡ Dân làng đã treo cổ Già Làng! Tiên Tri đã MẤT HOÀN TOÀN khả năng soi chiếu.');
+        showToast('⚡ Dân làng đã treo cổ Già Làng! Tiên Tri đã MẤT HOÀN TOÀN khả năng soi chiếu.');
         return;
       }
 
@@ -1214,7 +1232,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       );
 
       if (mySeerActions.length >= 1) {
-        alert('Đêm nay bạn đã đoán 1 người rồi! Quyền đoán của Tiên Tri đã bị khóa cho đến đêm tiếp theo.');
+        showToast('Đêm nay bạn đã đoán 1 người rồi! Quyền đoán của Tiên Tri đã bị khóa cho đến đêm tiếp theo.');
         return;
       }
 
@@ -1234,14 +1252,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         dayNumber: room.dayNumber,
       });
       setSelectedTargetId(targetId);
-      alert(`Kết quả dự đoán của Tiên Tri: ${resultText}`);
+      showToast(`Kết quả dự đoán của Tiên Tri: ${resultText}`);
       return;
     }
 
     if (step === 'werewolves') {
       const isWolf = currentPlayer.role.includes('wolf') || currentPlayer.team === 'werewolves';
       if (!isWolf) {
-        alert(`Hệ thống đang tương tác riêng với Sói. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Sói. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
@@ -1254,18 +1272,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
       setSelectedTargetId(targetId);
       soundEffects.playHowl();
-      alert(`Đã chọn/thay đổi con mồi! Ma Sói đã chọn cắn ${targetPlayer.name} đêm nay. Bạn có thể chọn người khác hoặc bấm "Tiếp Theo" để chốt.`);
+      showToast(`Đã chọn/thay đổi con mồi! Ma Sói đã chọn cắn ${targetPlayer.name} đêm nay. Bạn có thể chọn người khác hoặc bấm "Tiếp Theo" để chốt.`);
       return;
     }
 
     if (step === 'guard') {
       if (currentPlayer.role !== 'guard') {
-        alert(`Hệ thống đang tương tác riêng với Bảo Vệ. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Bảo Vệ. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (room.villagePowersLost) {
-        alert('⚡ Dân làng đã treo cổ Già Làng! Bảo Vệ đã MẤT HOÀN TOÀN khả năng che chở.');
+        showToast('⚡ Dân làng đã treo cổ Già Làng! Bảo Vệ đã MẤT HOÀN TOÀN khả năng che chở.');
         return;
       }
 
@@ -1274,7 +1292,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       );
       if (lastGuardAction && lastGuardAction.targetId === targetId) {
         const prevTarget = players.find((p) => p.id === lastGuardAction.targetId);
-        alert(`⚠️ Bảo Vệ không thể bảo vệ cùng 1 người (${prevTarget?.name || 'mục tiêu đêm trước'}) trong 2 đêm liên tiếp! Vui lòng chọn người khác.`);
+        showToast(`⚠️ Bảo Vệ không thể bảo vệ cùng 1 người (${prevTarget?.name || 'mục tiêu đêm trước'}) trong 2 đêm liên tiếp! Vui lòng chọn người khác.`);
         return;
       }
 
@@ -1287,13 +1305,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
       setSelectedTargetId(targetId);
       soundEffects.playChimeBell();
-      alert(`Đã chọn/thay đổi mục tiêu bảo vệ: ${targetPlayer.name}. Bạn có thể đổi người khác hoặc bấm "Tiếp Theo" để chốt.`);
+      showToast(`Đã chọn/thay đổi mục tiêu bảo vệ: ${targetPlayer.name}. Bạn có thể đổi người khác hoặc bấm "Tiếp Theo" để chốt.`);
       return;
     }
 
     if (step === 'cupid') {
       if (currentPlayer.role !== 'cupid') {
-        alert(`Hệ thống đang tương tác riêng với Thần Tình Yêu. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Thần Tình Yêu. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
@@ -1312,16 +1330,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       soundEffects.playChimeBell();
 
       if (myCupidActions.length === 0) {
-        alert(`Đã chọn người thứ 1: ${targetPlayer.name}. Hãy chọn tiếp 1 người nữa để se duyên!`);
+        showToast(`Đã chọn người thứ 1: ${targetPlayer.name}. Hãy chọn tiếp 1 người nữa để se duyên!`);
       } else {
-        alert(`Đã chọn người thứ 2: ${targetPlayer.name}. Hai trái tim đã được gắn kết! Bấm "Tiếp Theo" để chốt.`);
+        showToast(`Đã chọn người thứ 2: ${targetPlayer.name}. Hai trái tim đã được gắn kết! Bấm "Tiếp Theo" để chốt.`);
       }
       return;
     }
 
     if (step === 'wild_child') {
       if (currentPlayer.role !== 'wild_child') {
-        alert(`Hệ thống đang tương tác riêng với Đứa Trẻ Hoang Dã. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Đứa Trẻ Hoang Dã. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
@@ -1335,29 +1353,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
       setSelectedTargetId(targetId);
       soundEffects.playChimeBell();
-      alert(`Đã chọn ${targetPlayer.name} làm CHA/ MẸ ĐỠ ĐẦU của bạn! Nếu ${targetPlayer.name} qua đời, bạn sẽ hóa thành SÓI.`);
+      showToast(`Đã chọn ${targetPlayer.name} làm CHA/ MẸ ĐỠ ĐẦU của bạn! Nếu ${targetPlayer.name} qua đời, bạn sẽ hóa thành SÓI.`);
       return;
     }
 
     if (step === 'white_wolf') {
       if (currentPlayer.role !== 'white_wolf') {
-        alert(`Hệ thống đang tương tác riêng với Sói Trắng. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Sói Trắng. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (!targetPlayer.isAlive) {
-        alert('Chỉ có thể chọn cắn người chơi còn sống!');
+        showToast('Chỉ có thể chọn cắn người chơi còn sống!');
         return;
       }
 
       if (targetPlayer.id === currentPlayer.id) {
-        alert('Bạn không thể tự cắn chính mình!');
+        showToast('Bạn không thể tự cắn chính mình!');
         return;
       }
 
       const isTargetWolf = targetPlayer.team === 'werewolves' || targetPlayer.role.includes('wolf');
       if (!isTargetWolf) {
-        alert('Sói Trắng chỉ có thể chọn cắn 1 con Sói khác trong bầy!');
+        showToast('Sói Trắng chỉ có thể chọn cắn 1 con Sói khác trong bầy!');
         return;
       }
 
@@ -1373,7 +1391,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           actionType: 'white_wolf_kill',
           dayNumber: room.dayNumber,
         });
-        alert(`Đã hủy cắn ${targetPlayer.name}.`);
+        showToast(`Đã hủy cắn ${targetPlayer.name}.`);
       } else {
         await submitNightAction(room.id, {
           actorId: currentPlayer.id,
@@ -1384,30 +1402,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
         setSelectedTargetId(targetId);
         soundEffects.playHowl();
-        alert(`Sói Trắng đã chọn cắn đồng bầy: ${targetPlayer.name}!`);
+        showToast(`Sói Trắng đã chọn cắn đồng bầy: ${targetPlayer.name}!`);
       }
       return;
     }
 
     if (step === 'dire_wolf') {
       if (currentPlayer.role !== 'dire_wolf') {
-        alert(`Hệ thống đang tương tác riêng với Sói Hùm. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Sói Hùm. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (!targetPlayer.isAlive) {
-        alert('Chỉ có thể chọn cắn người chơi còn sống!');
+        showToast('Chỉ có thể chọn cắn người chơi còn sống!');
         return;
       }
 
       if (targetPlayer.id === currentPlayer.id) {
-        alert('Bạn không thể tự cắn chính mình!');
+        showToast('Bạn không thể tự cắn chính mình!');
         return;
       }
 
       const isTargetWolf = targetPlayer.team === 'werewolves' || targetPlayer.role.includes('wolf');
       if (isTargetWolf) {
-        alert('Sói Hùm không thể cắn đồng bọn Ma Sói!');
+        showToast('Sói Hùm không thể cắn đồng bọn Ma Sói!');
         return;
       }
 
@@ -1423,7 +1441,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           actionType: 'dire_wolf_kill',
           dayNumber: room.dayNumber,
         });
-        alert(`Đã hủy cắn ${targetPlayer.name}.`);
+        showToast(`Đã hủy cắn ${targetPlayer.name}.`);
       } else {
         await submitNightAction(room.id, {
           actorId: currentPlayer.id,
@@ -1434,29 +1452,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
         setSelectedTargetId(targetId);
         soundEffects.playHowl();
-        alert(`Sói Hùm đã chọn cắn thêm con mồi thứ 2: ${targetPlayer.name}!`);
+        showToast(`Sói Hùm đã chọn cắn thêm con mồi thứ 2: ${targetPlayer.name}!`);
       }
       return;
     }
 
     if (step === 'fox') {
       if (currentPlayer.role !== 'fox') {
-        alert(`Hệ thống đang tương tác riêng với Cáo. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Cáo. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (room.villagePowersLost) {
-        alert('⚡ Dân làng đã treo cổ Già Làng! Cáo đã MẤT HOÀN TOÀN khả năng ngửi mùi Sói.');
+        showToast('⚡ Dân làng đã treo cổ Già Làng! Cáo đã MẤT HOÀN TOÀN khả năng ngửi mùi Sói.');
         return;
       }
 
       if (currentPlayer.foxLostPower) {
-        alert('Cáo đã bị MẤT KHẢ NĂNG do lần ngửi hơi trước đó không có Ma Sói nào!');
+        showToast('Cáo đã bị MẤT KHẢ NĂNG do lần ngửi hơi trước đó không có Ma Sói nào!');
         return;
       }
 
       if (!targetPlayer.isAlive) {
-        alert('Cáo chỉ có thể chọn kiểm tra người chơi CÒN SỐNG!');
+        showToast('Cáo chỉ có thể chọn kiểm tra người chơi CÒN SỐNG!');
         return;
       }
 
@@ -1467,7 +1485,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const existingAction = myFoxActions.find((a) => a.targetId === targetId);
       if (existingAction) {
         await deleteNightAction(room.id, existingAction);
-        alert(`Đã hủy chọn ${targetPlayer.name}.`);
+        showToast(`Đã hủy chọn ${targetPlayer.name}.`);
         return;
       }
 
@@ -1475,7 +1493,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const maxTargets = Math.min(3, alivePlayers.length);
 
       if (myFoxActions.length >= maxTargets) {
-        alert(`Đêm nay bạn đã chọn đủ ${maxTargets} người rồi! Hãy bấm vào người đã chọn nếu muốn bỏ chọn để đổi mục tiêu.`);
+        showToast(`Đêm nay bạn đã chọn đủ ${maxTargets} người rồi! Hãy bấm vào người đã chọn nếu muốn bỏ chọn để đổi mục tiêu.`);
         return;
       }
 
@@ -1496,30 +1514,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         const hasWolf = checkedPlayers.some((p) => p.team === 'werewolves' || p.role.includes('wolf'));
 
         if (hasWolf) {
-          alert(`🦊 MẮT THẦN THÔNG: Có ÍT NHẤT 1 MA SÓI nằm trong nhóm 3 người bạn chọn [${checkedPlayers.map((p) => p.name).join(', ')}]! Bạn tiếp tục giữ năng lực.`);
+          showToast(`🦊 MẮT THẦN THÔNG: Có ÍT NHẤT 1 MA SÓI nằm trong nhóm 3 người bạn chọn [${checkedPlayers.map((p) => p.name).join(', ')}]! Bạn tiếp tục giữ năng lực.`);
         } else {
-          alert(`❌ MẮT THẦN KINH: KHÔNG CÓ MA SÓI NÀO trong nhóm 3 người bạn chọn [${checkedPlayers.map((p) => p.name).join(', ')}]! Cáo đã MẤT HOÀN TOÀN NĂNG LỰC.`);
+          showToast(`❌ MẮT THẦN KINH: KHÔNG CÓ MA SÓI NÀO trong nhóm 3 người bạn chọn [${checkedPlayers.map((p) => p.name).join(', ')}]! Cáo đã MẤT HOÀN TOÀN NĂNG LỰC.`);
           await updatePlayerState(room.id, currentPlayer.id, { foxLostPower: true });
         }
       } else {
-        alert(`🦊 Đã chọn mục tiêu thứ ${updatedTonightTargetIds.length}: ${targetPlayer.name}. Hãy chọn tiếp ${maxTargets - updatedTonightTargetIds.length} người nữa!`);
+        showToast(`🦊 Đã chọn mục tiêu thứ ${updatedTonightTargetIds.length}: ${targetPlayer.name}. Hãy chọn tiếp ${maxTargets - updatedTonightTargetIds.length} người nữa!`);
       }
       return;
     }
 
     if (step === 'witch') {
       if (currentPlayer.role !== 'witch') {
-        alert(`Hệ thống đang tương tác riêng với Phù Thủy. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Phù Thủy. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (room.villagePowersLost) {
-        alert('⚡ Dân làng đã treo cổ Già Làng! Phù Thủy đã MẤT HOÀN TOÀN khả năng dùng thuốc.');
+        showToast('⚡ Dân làng đã treo cổ Già Làng! Phù Thủy đã MẤT HOÀN TOÀN khả năng dùng thuốc.');
         return;
       }
 
       if (hasUsedPoisonInPast) {
-        alert('Bạn đã sử dụng Bình Thuốc Độc trong đêm trước rồi và không thể dùng thêm lần nữa trong ván này!');
+        showToast('Bạn đã sử dụng Bình Thuốc Độc trong đêm trước rồi và không thể dùng thêm lần nữa trong ván này!');
         return;
       }
 
@@ -1531,7 +1549,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           actionType: 'witch_poison',
           dayNumber: room.dayNumber,
         });
-        alert(`Đã hủy hạ độc ${targetPlayer.name}.`);
+        showToast(`Đã hủy hạ độc ${targetPlayer.name}.`);
       } else {
         await submitNightAction(room.id, {
           actorId: currentPlayer.id,
@@ -1542,24 +1560,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
         setSelectedTargetId(targetId);
         soundEffects.playChimeBell();
-        alert(`Đã chọn hạ độc: ${targetPlayer.name}. Bạn có thể bấm nút Hủy Hạ Độc trong bảng điều khiển nếu đổi ý.`);
+        showToast(`Đã chọn hạ độc: ${targetPlayer.name}. Bạn có thể bấm nút Hủy Hạ Độc trong bảng điều khiển nếu đổi ý.`);
       }
       return;
     }
 
     if (step === 'piper') {
       if (currentPlayer.role !== 'piper') {
-        alert(`Hệ thống đang tương tác riêng với Người Thổi Sáo. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        showToast(`Hệ thống đang tương tác riêng với Người Thổi Sáo. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
         return;
       }
 
       if (!targetPlayer.isAlive) {
-        alert('Người Thổi Sáo không thể thôi miên người đã CHẾT! Vui lòng chọn người CÒN SỐNG.');
+        showToast('Người Thổi Sáo không thể thôi miên người đã CHẾT! Vui lòng chọn người CÒN SỐNG.');
         return;
       }
 
       if (pastEnchantedTargetIds.includes(targetId)) {
-        alert(`[${targetPlayer.name}] đã bị thôi miên từ các đêm trước rồi! Vui lòng chọn người chưa bị thôi miên.`);
+        showToast(`[${targetPlayer.name}] đã bị thôi miên từ các đêm trước rồi! Vui lòng chọn người chưa bị thôi miên.`);
         return;
       }
 
@@ -1570,12 +1588,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const existingAction = myPiperActions.find((a) => a.targetId === targetId);
       if (existingAction) {
         await deleteNightAction(room.id, existingAction);
-        alert(`Đã hủy thôi miên ${targetPlayer.name}.`);
+        showToast(`Đã hủy thôi miên ${targetPlayer.name}.`);
         return;
       }
 
       if (myPiperActions.length >= 2) {
-        alert('Bạn đã chọn đủ 2 người để thôi miên đêm nay rồi! Hãy nhấp vào người đã chọn nếu muốn bỏ chọn.');
+        showToast('Bạn đã chọn đủ 2 người để thôi miên đêm nay rồi! Hãy nhấp vào người đã chọn nếu muốn bỏ chọn.');
         return;
       }
 
@@ -1590,9 +1608,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       soundEffects.playChimeBell();
 
       if (myPiperActions.length === 0) {
-        alert(`Đã chọn thôi miên người thứ 1: ${targetPlayer.name}. Hãy chọn tiếp 1 người nữa!`);
+        showToast(`Đã chọn thôi miên người thứ 1: ${targetPlayer.name}. Hãy chọn tiếp 1 người nữa!`);
       } else {
-        alert(`Đã chọn thôi miên người thứ 2: ${targetPlayer.name}. Cả 2 đã chìm vào giấc mộng thôi miên!`);
+        showToast(`Đã chọn thôi miên người thứ 2: ${targetPlayer.name}. Cả 2 đã chìm vào giấc mộng thôi miên!`);
       }
       return;
     }
@@ -2472,14 +2490,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             } else {
               await proceedToNight(updatedPlayers);
             }
-          }, 2500);
+          }, 3000);
         } else {
-          // Human judge sees prompt on verdict screen. Set a 15s fallback to night if judge doesn't act.
-          setTimeout(async () => {
-            if (room.status === 'day_verdict') {
-              await proceedToNight(updatedPlayers);
-            }
-          }, 15000);
+          // Human judge has full control to trigger 2nd vote or Host can advance to Night
+          // We also broadcast an attention chime
+          soundEffects.playGavelStrike();
         }
       } else {
         await proceedToNight(updatedPlayers);
@@ -4245,6 +4260,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           }}
         />
       )}
+    
+      {/* Sleek In-Game Toast Notification Banner */}
+      {toastNotification && (
+        <div
+          key={toastNotification.id}
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[92%] sm:w-auto px-4 py-3 rounded-2xl bg-slate-900/95 border border-purple-500/50 text-slate-100 shadow-2xl shadow-purple-950/80 backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ring-1 ring-white/10"
+        >
+          <div className="w-8 h-8 rounded-full bg-purple-600/30 border border-purple-400/40 flex items-center justify-center shrink-0 text-amber-300">
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+          </div>
+          <p className="text-xs sm:text-sm font-medium leading-snug flex-1 pr-1 text-slate-100">
+            {toastNotification.text}
+          </p>
+          <button
+            onClick={() => setToastNotification(null)}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0 cursor-pointer"
+            aria-label="Đóng thông báo"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
     </div>
   );
 };
