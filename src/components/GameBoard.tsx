@@ -31,6 +31,7 @@ import {
   generateBotDayDiscussionDialogues,
   getSmartBotNominationTarget,
   getSmartBotVerdictChoice,
+  getSmartBotDefenseSpeech,
 } from '../services/botAI';
 import { CardArt } from './CardArt';
 import { CardRevealModal } from './CardRevealModal';
@@ -1250,18 +1251,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const handlePerformNightAction = async (targetId: string) => {
     if (!isAlive) return;
 
-    // Touching own card is for flipping/revealing role
-    if (targetId === currentPlayer.id) return;
-
     const targetPlayer = players.find((p) => p.id === targetId);
     if (!targetPlayer || !targetPlayer.isAlive) return;
 
     const step = room.nightStep;
     const myRoleName = ROLE_DEFINITIONS[currentPlayer.role]?.name || 'Dân Làng';
+    const isMe = targetId === currentPlayer.id;
 
     if (step === 'seer') {
       if (currentPlayer.role !== 'seer') {
         showToast(`Hệ thống đang tương tác riêng với Tiên Tri. Bạn là ${myRoleName}, hãy giữ im lặng!`);
+        return;
+      }
+
+      if (isMe) {
+        showToast('Tiên Tri không thể tự soi chính mình! Hãy chọn một người chơi khác trong làng.');
         return;
       }
 
@@ -1307,6 +1311,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
 
+      if (isMe) {
+        showToast('Ma Sói không thể tự cắn chính mình!');
+        return;
+      }
+
       await submitNightAction(room.id, {
         actorId: currentPlayer.id,
         actorRole: currentPlayer.role,
@@ -1336,7 +1345,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       );
       if (lastGuardAction && lastGuardAction.targetId === targetId) {
         const prevTarget = players.find((p) => p.id === lastGuardAction.targetId);
-        showToast(`⚠️ Bảo Vệ không thể bảo vệ cùng 1 người (${prevTarget?.name || 'mục tiêu đêm trước'}) trong 2 đêm liên tiếp! Vui lòng chọn người khác.`);
+        const prevName = lastGuardAction.targetId === currentPlayer.id ? 'chính bạn' : (prevTarget?.name || 'mục tiêu đêm trước');
+        showToast(`⚠️ Bảo Vệ không thể bảo vệ cùng 1 người (${prevName}) trong 2 đêm liên tiếp! Vui lòng chọn người khác.`);
         return;
       }
 
@@ -1349,7 +1359,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
       setSelectedTargetId(targetId);
       soundEffects.playChimeBell();
-      showToast(`Đã chọn/thay đổi mục tiêu bảo vệ: ${targetPlayer.name}. Bạn có thể đổi người khác hoặc bấm "Tiếp Theo" để chốt.`);
+      const targetDisplayName = isMe ? 'CHÍNH BẠN (Tự Bảo Vệ)' : targetPlayer.name;
+      showToast(`Đã chọn/thay đổi mục tiêu bảo vệ: ${targetDisplayName}. Bạn có thể đổi người khác hoặc bấm "Tiếp Theo" để chốt.`);
       return;
     }
 
@@ -1362,6 +1373,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const myCupidActions = actions.filter(
         (a) => a.actorId === currentPlayer.id && a.actionType === 'cupid_link' && a.dayNumber === 1
       );
+
+      if (myCupidActions.some((a) => a.targetId === targetId)) {
+        showToast('Bạn đã chọn người này rồi! Vui lòng chọn 1 người khác để se duyên.');
+        return;
+      }
 
       await submitNightAction(room.id, {
         actorId: currentPlayer.id,
@@ -1384,6 +1400,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (step === 'wild_child') {
       if (currentPlayer.role !== 'wild_child') {
         showToast(`Hệ thống đang tương tác riêng với Đứa Trẻ Hoang Dã. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        return;
+      }
+
+      if (isMe) {
+        showToast('Đứa Trẻ Hoang Dã không thể tự chọn chính mình làm Cha/Mẹ đỡ đầu! Hãy chọn một người khác.');
         return;
       }
 
@@ -1575,6 +1596,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
 
+      if (isMe) {
+        showToast('Phù Thủy không thể tự hạ độc chính mình!');
+        return;
+      }
+
       if (room.villagePowersLost) {
         showToast('⚡ Dân làng đã treo cổ Già Làng! Phù Thủy đã MẤT HOÀN TOÀN khả năng dùng thuốc.');
         return;
@@ -1612,6 +1638,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (step === 'piper') {
       if (currentPlayer.role !== 'piper') {
         showToast(`Hệ thống đang tương tác riêng với Người Thổi Sáo. Bạn là ${myRoleName}, hãy nhắm mắt đi ngủ!`);
+        return;
+      }
+
+      if (isMe) {
+        showToast('Người Thổi Sáo không thể tự thôi miên chính mình!');
         return;
       }
 
@@ -2143,21 +2174,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           if (isHost && targetPlayer.isBot) {
             setTimeout(async () => {
-              const botDefenses = [
-                "Tôi hoàn toàn vô tội! Dân làng hãy tin tôi, đừng để Ma Sói dắt mũi!",
-                "Tôi là dân làng tốt! Nếu treo cổ tôi, phe Dân sẽ mất đi một lá phiếu quan trọng!",
-                "Có kẻ cố tình bom phiếu. Mọi người hãy bình tĩnh tha bổng cho tôi!",
-                "Tôi thề tôi không phải Ma Sói! Đêm nay hãy cho Tiên Tri soi tôi!",
-                "Tôi chính là Già Làng! Treo cổ tôi, mọi người sẽ hứng chịu cơn giận của thần linh",
-                "Tôi là Tiên tri mà. Người vừa nãy mới là Sói!",
-                "Sói sẽ thắng nếu dân làng treo cổ tôi!",
-                "Tôi là Thiên thần, hãy treo cổ tôi đi",
-                "Oan ức quá, Bao đại nhân ơi. Tôi không phải là Sói đâu.",
-                "Treo cổ tôi, làng sẽ xuất hiện thêm 1 sói",
-                "Tôi mà chết thì thế nào cũng có thêm 1 người chết cùng",
-                "Xin hãy tha bổng! Tôi sẽ chứng minh sự trong sạch của mình!"
-              ];
-              const randomMsg = botDefenses[Math.floor(Math.random() * botDefenses.length)];
+              const randomMsg = getSmartBotDefenseSpeech(targetPlayer);
               await sendChatMessage(room.id, {
                 senderId: targetPlayer.id,
                 senderName: targetPlayer.name,
