@@ -1,8 +1,9 @@
 {
-  "name": "Trò Chơi Ma Sói Trực Tuyến",
-  "short_name": "Ma Sói Online",
+  "name": "Trò Chơi Ma Sói",
+  "short_name": "Ma Sói",
   "description": "Game Ma Sói online với Quản trò giọng nói tự động, Chat voice & text, kịch bản chuẩn.",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0F172A",
   "theme_color": "#1E1B4B",
