@@ -1,4 +1,4 @@
-import { RoleMeta, RoleType } from '../types';
+import { Player, RoleMeta, RoleType } from '../types';
 
 export const ROLE_DEFINITIONS: Record<RoleType, RoleMeta> = {
   villager: {
@@ -312,21 +312,43 @@ export const PRESET_ROLE_SETUPS: Record<number, { title: string; roles: RoleType
 
 export const ROLE_FUNNY_EPITHETS: Record<string, string[]> = {
   werewolf: [
-    'dễ thương',
     'ăn chay',
     'béo ú thích gặm xương',
     'sợ bóng tối',
     'ngủ gật',
     'sún răng',
     'suy dinh dưỡng',
+    'dễ thương',
     'ốm đói',
     'chán ăn',
     'cận thị',
     'lãng tai',
   ],
+  white_wolf: [
+    'cô độc',
+    'khoác áo đen',
+    'lạnh lùng',
+    'khoái ăn sang',
+    'ham chơi',
+    'có bộ lông đen',
+  ],
+  curse_wolf: [
+    'hay chửi bậy',
+    'sợ nước',
+    'bị tiểu đường',
+    'xì hơi bừa bãi',
+    'lười đánh răng',
+  ],
+  dire_wolf: [
+    'hung tợn',
+    'háu ăn',
+    'ốm nhách',
+    'thích cảm giác mạnh',
+    'gym chúa',
+  ],
   seer: [
-    'lẩn thẩn',
     'lú lẫn',
+    'lẩn thẩn',
     'đeo kính cận',
     'báo quẻ bừa',
     'mắt mờ',
@@ -359,10 +381,10 @@ export const ROLE_FUNNY_EPITHETS: Record<string, string[]> = {
     'vụng về',
   ],
   cupid: [
-    'tự luyến',
+    'thích làm mai',
     'FA lâu năm',
     'hay dỗi',
-    'răng trắng',
+    'cao to đen hôi',
     'mắt to',
   ],
   elder: [
@@ -383,22 +405,50 @@ export const ROLE_FUNNY_EPITHETS: Record<string, string[]> = {
     'tinh ranh',
     'nghẹt mũi',
     'láo nháo',
-    'nho còn xanh lắm',
+    'luôn nói nho còn xanh lắm',
     'hay trộm gà',
   ],
   idiot: [
+    'đẹp trai',
     'ngây ngô',
     'yêu đời',
     'tào lao',
-    'chuối cả nải',
     'khờ khạo',
   ],
   angel: [
-    'bị lưu đày',
+    'không biết bay',
+    'bị rụng tóc',
     'nổi loạn',
     'không có cánh',
-    'vừa có cánh vừa có sừng',
-    'có cánh mà không biết bay',
+    'mắt đen',
+  ],
+  wild_child: [
+    'ngây thơ',
+    'nghịch ngợm',
+    'thích ăn kem',
+    'hay khóc nhè',
+    'lóc chóc',
+  ],
+  knight: [
+    'súng nước',
+    'oai vệ',
+    'cưỡi heo',
+    'kiếm gỗ',
+    'mũ sắt',
+  ],
+  stuttering_judge: [
+    'lắp bắp',
+    'nói nhiều',
+    'bịt mắt',
+    'công tâm',
+    'nghiêm túc',
+  ],
+  scapegoat: [
+    'bất đắc dĩ',
+    'đen đủi',
+    'vai u thịt bắp',
+    'sao cũng được',
+    'ngơ ngác',
   ],
   villager: [
     'lông bông không nghề ngỗng gì',
@@ -412,6 +462,80 @@ export const ROLE_FUNNY_EPITHETS: Record<string, string[]> = {
 export function getRoleEpithet(role: string, seed: number = 0): string {
   const options = ROLE_FUNNY_EPITHETS[role] || ['độc đáo', 'bí ẩn', 'hài hước'];
   return options[Math.abs(seed) % options.length];
+}
+
+export function formatRoleCompositionWithEpithets(
+  playersList?: Player[],
+  roomRolesList?: RoleType[]
+): string {
+  const roles =
+    playersList && playersList.length > 0
+      ? playersList.map((p) => p.role)
+      : roomRolesList && roomRolesList.length > 0
+      ? roomRolesList
+      : [];
+
+  if (roles.length === 0) {
+    return '1 tiên tri lú lẫn, 1 bảo vệ mê ngủ, 2 người dân lông bông không nghề ngỗng gì, và 2 ma sói ăn chay';
+  }
+
+  const counts: Record<string, number> = {};
+  roles.forEach((r) => {
+    counts[r] = (counts[r] || 0) + 1;
+  });
+
+  const parts: string[] = [];
+  let seed = 0;
+  for (const [role, count] of Object.entries(counts)) {
+    seed++;
+    const ep = getRoleEpithet(role, seed);
+    if (role === 'werewolf') {
+      parts.push(`${count} ma sói ${ep}`);
+    } else if (role === 'white_wolf') {
+      parts.push(`${count} sói trắng ${ep}`);
+    } else if (role === 'curse_wolf') {
+      parts.push(`${count} sói nguyền ${ep}`);
+    } else if (role === 'dire_wolf') {
+      parts.push(`${count} sói hùm ${ep}`);
+    } else if (role === 'villager') {
+      parts.push(`${count} dân làng ${ep}`);
+    } else if (role === 'seer') {
+      parts.push(`${count} tiên tri ${ep}`);
+    } else if (role === 'hunter') {
+      parts.push(`${count} thợ săn ${ep}`);
+    } else if (role === 'guard') {
+      parts.push(`${count} bảo vệ ${ep}`);
+    } else if (role === 'witch') {
+      parts.push(`${count} phù thủy ${ep}`);
+    } else if (role === 'cupid') {
+      parts.push(`${count} thần tình yêu ${ep}`);
+    } else if (role === 'elder') {
+      parts.push(`${count} già làng ${ep}`);
+    } else if (role === 'piper') {
+      parts.push(`${count} người thổi sáo ${ep}`);
+    } else if (role === 'fox') {
+      parts.push(`${count} con cáo ${ep}`);
+    } else if (role === 'idiot') {
+      parts.push(`${count} kẻ ngốc ${ep}`);
+    } else if (role === 'angel') {
+      parts.push(`${count} thiên thần ${ep}`);
+    } else if (role === 'wild_child') {
+      parts.push(`${count} đứa trẻ hoang dã ${ep}`);
+    } else if (role === 'knight') {
+      parts.push(`${count} hiệp sĩ ${ep}`);
+    } else if (role === 'stuttering_judge') {
+      parts.push(`${count} quan tòa ${ep}`);
+    } else if (role === 'scapegoat') {
+      parts.push(`${count} kẻ gánh tội ${ep}`);
+    } else {
+      const metaName = (ROLE_DEFINITIONS[role as RoleType]?.name || role).toLowerCase();
+      parts.push(`${count} ${metaName} ${ep}`);
+    }
+  }
+
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return `${parts[0]} và ${parts[1]}`;
+  return parts.slice(0, -1).join(', ') + ', và ' + parts[parts.length - 1];
 }
 
 export const NARRATOR_SCRIPTS = {
@@ -566,6 +690,27 @@ export const NARRATOR_SCRIPTS = {
         'Mùi thảo mộc và độc dược phảng phất trong gió khuya... Dân làng hãy tiếp tục yên ngủ.',
         `Độc dược và Giải dược, hai bình thuốc thần kỳ không nhãn. Uống nhầm một ngụm thuốc, cơn say theo cả đời...`,
         'Không gian tĩnh mịch rợn người... Hãy nhắm mắt và giữ im lặng.',
+      ],
+      fox: [
+        'Mùi hương thoang thoảng của hồ ly lướt qua trong sương đêm... Dân làng hãy tiếp tục ngủ sâu.',
+        'Chiếc đuôi cáo phe phẩy ngoài thềm cửa... Hãy an tâm ngủ ngon.',
+        'Đôi mắt sáng lấp lánh quan sát từ bụi cây... Dân làng hãy giữ giấc mộng đẹp.',
+      ],
+      wild_child: [
+        'Tiếng bước chân tinh nghịch của đứa trẻ lang thang... Mọi người hãy an giấc.',
+        'Một linh hồn bé nhỏ đang tìm kiếm chỗ dựa... Hãy nhắm mắt ngủ yên.',
+      ],
+      white_wolf: [
+        'Một luồng sát khí lạnh lẽo thấu xương lướt qua trong đêm... Hãy nằm yên giữ giấc ngủ.',
+        'Ánh trăng tuyết rọi bóng một kẻ săn mồi cô độc... Hãy giữ im lặng tuyệt đối.',
+      ],
+      curse_wolf: [
+        'Lời nguyền bóng tối đang âm thầm lan tỏa trong sương mù... Hãy nhắm mắt ngủ sâu.',
+        'Một luồng ma thuật hắc ám đang rình rập... Dân làng hãy ngủ yên.',
+      ],
+      dire_wolf: [
+        'Tiếng gầm gừ trầm đục vang lên từ góc tối... Hãy cuộn tròn trong chăn.',
+        'Cơn đói cồn cào của bầy dã thú đang rạo rực... Hãy nằm im đừng cử động.',
       ],
       piper: [
         'Tiếng sáo mờ ảo du dương vang lên từ hư không... Mọi người hãy chìm sâu vào giấc mộng.',
