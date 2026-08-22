@@ -471,6 +471,11 @@ const getPlayerActionLogs = (
         icon: '🐺',
         text: `Đêm ${a.dayNumber}: Chọn cắn ${targetName}`,
       });
+    } else if (a.actionType === 'hunter_revenge_shot') {
+      logs.push({
+        icon: '🏹',
+        text: `Ngày ${a.dayNumber}: Thợ Săn bắn gục ${targetName}`,
+      });
     }
   });
 
