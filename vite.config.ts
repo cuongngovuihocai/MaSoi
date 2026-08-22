@@ -4,8 +4,10 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // If building for GitHub Pages via env or default relative, use './' so it works on both Vercel (/) and GitHub Pages (/MaSoi/)
+  const isGitHubPages = process.env.GITHUB_PAGES === 'true';
   return {
-    base: process.env.NODE_ENV === 'production' ? '/MaSoi/' : '/',
+    base: isGitHubPages ? '/MaSoi/' : './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
