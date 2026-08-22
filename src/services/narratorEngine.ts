@@ -267,7 +267,7 @@ class NarratorEngine {
     }
   }
 
-  // Play Vietnamese audio through high-quality /api/tts endpoint
+  // Play Vietnamese audio through high-quality /api/tts endpoint with direct Google TTS fallback for GitHub Pages
   private playOnlineVietnameseTTS(text: string, onEnd: () => void, onError: () => void) {
     const chunks = splitIntoAudioChunks(text);
     if (chunks.length === 0) {
@@ -284,58 +284,77 @@ class NarratorEngine {
       }
 
       const chunk = chunks[chunkIdx];
-      const url = `/api/tts?text=${encodeURIComponent(chunk)}`;
+      // Candidate audio URLs: 1. Server API endpoint (Express backend) -> 2. Direct Google Translate TTS endpoint (GitHub Pages / static hosts)
+      const candidateUrls = [
+        `/api/tts?text=${encodeURIComponent(chunk)}`,
+        `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`,
+      ];
 
-      try {
-        const audio = new Audio();
-        this.currentAudio = audio;
-        audio.preload = 'auto';
-        audio.playbackRate = this.speechRate;
-        audio.defaultPlaybackRate = this.speechRate;
-        audio.src = url;
+      let candidateIdx = 0;
 
-        // Ensure playbackRate sticks when metadata loads or playback starts
-        audio.onloadedmetadata = () => {
-          try {
-            audio.playbackRate = this.speechRate;
-          } catch (e) {}
-        };
-        audio.onplay = () => {
-          try {
-            audio.playbackRate = this.speechRate;
-          } catch (e) {}
-        };
-
-        let finished = false;
-        const handleDone = () => {
-          if (finished) return;
-          finished = true;
-          this.currentAudio = null;
-          chunkIdx++;
-          playNextChunk();
-        };
-
-        const handleFail = () => {
-          if (finished) return;
-          finished = true;
-          this.currentAudio = null;
+      const tryPlayCandidate = () => {
+        if (candidateIdx >= candidateUrls.length) {
           onError();
-        };
-
-        audio.onended = handleDone;
-        audio.onerror = handleFail;
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((err) => {
-            console.warn('Online TTS play promise rejected:', err);
-            handleFail();
-          });
+          return;
         }
-      } catch (err) {
-        this.currentAudio = null;
-        onError();
-      }
+
+        const url = candidateUrls[candidateIdx];
+
+        try {
+          const audio = new Audio();
+          this.currentAudio = audio;
+          audio.preload = 'auto';
+          audio.playbackRate = this.speechRate;
+          audio.defaultPlaybackRate = this.speechRate;
+          audio.src = url;
+
+          audio.onloadedmetadata = () => {
+            try {
+              audio.playbackRate = this.speechRate;
+            } catch (e) {}
+          };
+          audio.onplay = () => {
+            try {
+              audio.playbackRate = this.speechRate;
+            } catch (e) {}
+          };
+
+          let finished = false;
+          const handleDone = () => {
+            if (finished) return;
+            finished = true;
+            this.currentAudio = null;
+            chunkIdx++;
+            playNextChunk();
+          };
+
+          const handleFail = () => {
+            if (finished) return;
+            finished = true;
+            this.currentAudio = null;
+            // Try next candidate URL (e.g. from /api/tts to direct Google TTS on GitHub Pages)
+            candidateIdx++;
+            tryPlayCandidate();
+          };
+
+          audio.onended = handleDone;
+          audio.onerror = handleFail;
+
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+              console.warn(`Online TTS candidate ${candidateIdx} failed:`, err);
+              handleFail();
+            });
+          }
+        } catch (err) {
+          this.currentAudio = null;
+          candidateIdx++;
+          tryPlayCandidate();
+        }
+      };
+
+      tryPlayCandidate();
     };
 
     playNextChunk();
