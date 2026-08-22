@@ -1,12 +1,12 @@
 {
-  "projectId": "line98-game",
-  "appId": "1:252310123568:web:6f493eb921fde15ac669f5",
-  "apiKey": "AIzaSyC_Lm0oSoGlRRmaCTiOB3d1o-Mwih-WOpk",
-  "authDomain": "line98-game.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-trchimasitrctuyn-8591c27c-5de2-4f41-a0fb-d965520ca6e1",
-  "storageBucket": "line98-game.firebasestorage.app",
-  "messagingSenderId": "252310123568",
-  "measurementId": "",
-  "oAuthClientId": "252310123568-q9rg7obi3mg814r7l6rgun57hv6gt9j5.apps.googleusercontent.com",
+  "projectId": "masoi-a55b5",
+  "appId": "1:631205746506:web:cbb113988204b5481ed3b3",
+  "apiKey": "AIzaSyDztXg80VPP3CnxnyOBgW9oO9vRE9rN404",
+  "authDomain": "masoi-a55b5.firebaseapp.com",
+  "firestoreDatabaseId": "",
+  "storageBucket": "masoi-a55b5.firebasestorage.app",
+  "messagingSenderId": "631205746506",
+  "measurementId": "G-EZHQENLNEZ",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
