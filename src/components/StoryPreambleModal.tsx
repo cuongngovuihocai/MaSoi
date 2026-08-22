@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Player, Room, RoleType } from '../types';
-import { ROLE_DEFINITIONS, getRoleEpithet } from '../data/roles';
+import { ROLE_DEFINITIONS, formatRoleCompositionWithEpithets } from '../data/roles';
 import { narrator } from '../services/narratorEngine';
 import { soundEffects } from '../services/audioSynthesizer';
 import {
@@ -74,61 +74,8 @@ const CollapsibleText: React.FC<{
   );
 };
 
-export function formatRoleComposition(playersList: Player[], roomRolesList?: RoleType[]): string {
-  const roles =
-    playersList && playersList.length > 0
-      ? playersList.map((p) => p.role)
-      : roomRolesList && roomRolesList.length > 0
-      ? roomRolesList
-      : [];
-
-  if (roles.length === 0) {
-    return '1 tiên tri lẩn thẩn, 1 thợ săn chột mắt, 1 bảo vệ mê ngủ, 2 người dân lông bông không nghề ngỗng gì, và 2 con sói đáng yêu ẩn dưới lốt dân thường.';
-  }
-
-  const counts: Record<string, number> = {};
-  roles.forEach((r) => {
-    counts[r] = (counts[r] || 0) + 1;
-  });
-
-  const parts: string[] = [];
-  let seed = 0;
-  for (const [role, count] of Object.entries(counts)) {
-    seed++;
-    const ep = getRoleEpithet(role, seed);
-    if (role.includes('wolf')) {
-      parts.push(`${count} con sói ${ep} ẩn dưới lốt dân thường`);
-    } else if (role === 'villager') {
-      parts.push(`${count} người dân ${ep}`);
-    } else if (role === 'seer') {
-      parts.push(`${count} tiên tri ${ep}`);
-    } else if (role === 'hunter') {
-      parts.push(`${count} thợ săn ${ep}`);
-    } else if (role === 'guard') {
-      parts.push(`${count} bảo vệ ${ep}`);
-    } else if (role === 'knight') {
-      parts.push(`${count} hiệp sĩ ${ep}`);
-    } else if (role === 'witch') {
-      parts.push(`${count} phù thủy ${ep}`);
-    } else if (role === 'cupid') {
-      parts.push(`${count} thần tình yêu ${ep}`);
-    } else if (role === 'elder') {
-      parts.push(`${count} già làng ${ep}`);
-    } else if (role === 'piper') {
-      parts.push(`${count} người thổi sáo ${ep}`);
-    } else if (role === 'fox') {
-      parts.push(`${count} cáo ${ep}`);
-    } else if (role === 'idiot') {
-      parts.push(`${count} kẻ ngốc ${ep}`);
-    } else {
-      const metaName = (ROLE_DEFINITIONS[role as RoleType]?.name || role).toLowerCase();
-      parts.push(`${count} ${metaName} ${ep}`);
-    }
-  }
-
-  if (parts.length === 1) return parts[0];
-  if (parts.length === 2) return `${parts[0]} và ${parts[1]}`;
-  return parts.slice(0, -1).join(', ') + ', và ' + parts[parts.length - 1];
+export function formatRoleComposition(playersList?: Player[], roomRolesList?: RoleType[]): string {
+  return formatRoleCompositionWithEpithets(playersList, roomRolesList);
 }
 
 export const StoryPreambleModal: React.FC<StoryPreambleModalProps> = ({
