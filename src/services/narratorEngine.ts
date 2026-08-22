@@ -284,9 +284,12 @@ class NarratorEngine {
       }
 
       const chunk = chunks[chunkIdx];
-      // Candidate audio URLs: 1. Server API endpoint (Express backend) -> 2. Direct Google Translate TTS endpoint (GitHub Pages / static hosts)
+      // Candidate audio URLs:
+      // 1. Relative /api/tts (works when running locally or on Vercel)
+      // 2. Vercel Cloud Backend TTS endpoint (allows GitHub Pages to stream Vietnamese voice directly!)
       const candidateUrls = [
         `/api/tts?text=${encodeURIComponent(chunk)}`,
+        `https://ma-soi-two.vercel.app/api/tts?text=${encodeURIComponent(chunk)}`,
         `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`,
       ];
 
