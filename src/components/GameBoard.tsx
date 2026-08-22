@@ -726,7 +726,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           const formatNameAndReasonList = (vics: Player[]) => {
             if (vics.length === 0) return '';
             const items = vics.map((p) => {
-              const reason = p.deathReason ? ` (nguyên nhân: ${p.deathReason})` : '';
+              const isPublicReason =
+                p.deathReason &&
+                (p.deathReason.toLowerCase().includes('thợ săn') ||
+                  p.deathReason.toLowerCase().includes('bắn') ||
+                  p.deathReason.toLowerCase().includes('người yêu') ||
+                  p.deathReason.toLowerCase().includes('tình yêu') ||
+                  p.deathReason.toLowerCase().includes('đau xót'));
+              const reason = isPublicReason ? ` (nguyên nhân: ${p.deathReason})` : '';
               return `${p.name}${reason}`;
             });
             if (items.length === 1) return items[0];
@@ -750,10 +757,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         announceNarrator(dayMsg, newWolfAppeared ? 'howl' : hasDeaths ? 'death' : 'rooster');
 
-        // Also broadcast detailed death cause report in Global Chat if host
+        // Also broadcast death report in Global Chat if host (only public causes disclosed)
         if (isHost && hasDeaths) {
           const victimPlayers = players.filter((p) => room.lastNightVictimIds?.includes(p.id));
-          const chatLines = victimPlayers.map((p) => `• ${p.name}: ${p.deathReason || 'Cái chết bí ẩn trong đêm'}`).join('\n');
+          const chatLines = victimPlayers
+            .map((p) => {
+              const isPublicReason =
+                p.deathReason &&
+                (p.deathReason.toLowerCase().includes('thợ săn') ||
+                  p.deathReason.toLowerCase().includes('bắn') ||
+                  p.deathReason.toLowerCase().includes('người yêu') ||
+                  p.deathReason.toLowerCase().includes('tình yêu') ||
+                  p.deathReason.toLowerCase().includes('đau xót'));
+              return isPublicReason ? `• ${p.name}: ${p.deathReason}` : `• ${p.name}`;
+            })
+            .join('\n');
           const summaryChat = `☠️ BÁO CÁO ÁN MẠNG ĐÊM NGÀY ${room.dayNumber - 1}:\nĐêm qua có ${victimPlayers.length} nạn nhân thiệt mạng:\n${chatLines}\nXin chia buồn cùng toàn thể dân làng!`;
           sendChatMessage(room.id, {
             senderId: 'system',
@@ -2421,34 +2439,64 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       accusedPlayerId: null,
       verdictFinished: false,
       verdictResultText: null,
+      stutteringJudgeSignActive: false,
     });
   };
 
-  // Stuttering Judge Sign Trigger (Used after 1st verdict execution/pardon)
-    // Stuttering Judge Sign Trigger (Used to activate round 2 voting)
-  const handleStutteringJudgeTrigger = async () => {
+  // Start Round 2 Voting initiated by Stuttering Judge
+  const startJudgeSecondVotingRound = async (judgePlayer?: Player) => {
+    if (judgePlayer && !judgePlayer.stutteringJudgeUsed) {
+      await updatePlayerState(room.id, judgePlayer.id, { stutteringJudgeUsed: true });
+    }
+    await clearRoomVotes(room.id);
+    const discTime = room.config?.discussionTimeSeconds ? room.config.discussionTimeSeconds * 1000 : 120000;
+    await updateRoomState(room.id, {
+      stutteringJudgeSignActive: false,
+      judgeSecondVotingActive: true,
+      status: 'day_discussion',
+      phaseEndTime: Date.now() + discTime,
+      accusedPlayerId: null,
+      verdictFinished: false,
+      verdictResultText: null,
+    });
+
+    soundEffects.playGavelStrike();
+    const judgeMsg =
+      '⚖️ BIỂU QUYẾT LẦN 2: Theo hiệu lệnh của Quan Tòa Lắp Bắp, Dân Làng bắt đầu vòng thảo luận và biểu quyết treo cổ LẦN 2 trong ngày hôm nay!';
+    announceNarrator('Dân làng bắt đầu vòng thảo luận và biểu quyết lần 2 trong ngày hôm nay!', 'gavel');
+    await sendChatMessage(room.id, {
+      senderId: 'system',
+      senderName: 'Quản Trò',
+      content: judgeMsg,
+      channel: 'global',
+      type: 'system',
+      createdAt: Date.now(),
+    });
+    showToast('⚖️ Đã kích hoạt vòng biểu quyết lần 2!', 'success');
+  };
+
+  // Stuttering Judge Pre-Signal during Day Discussion / Voting / Defense
+  const handleStutteringJudgePreSignal = async () => {
     if (room.villagePowersLost) return;
-    const judge = players.find((p) => p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed);
+    const judge = players.find(
+      (p) => p.id === currentPlayer.id && p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed
+    );
     if (!judge) return;
 
     setIsProcessingAction(true);
     try {
       await updatePlayerState(room.id, judge.id, { stutteringJudgeUsed: true });
-      await clearRoomVotes(room.id);
-
       await updateRoomState(room.id, {
         stutteringJudgeSignActive: true,
-        judgeSecondVotingActive: true,
-        status: 'day_discussion',
-        phaseEndTime: Date.now() + (room.config?.discussionTimeSeconds ? room.config.discussionTimeSeconds * 1000 : 120000),
-        accusedPlayerId: null,
-        verdictFinished: false,
-        verdictResultText: null,
       });
 
       soundEffects.playGavelStrike();
-      const judgeMsg = "⚖️ TÍN HIỆU TỪ QUAN TÒA: Quan Tòa Lắp Bắp đã ra hiệu gõ búa! Dân làng sẽ tiến hành thêm một vòng biểu quyết thứ 2 trong ngày hôm nay!";
-      announceNarrator(judgeMsg, 'gavel');
+      const judgeMsg =
+        '⚖️ TÍN HIỆU TỪ QUAN TÒA: Quan Tòa Lắp Bắp đã ra hiệu gõ búa cho Quản Trò! Sau khi phiên xử thứ nhất hoàn tất, làng sẽ ngay lập tức bước vào VÒNG BIỂU QUYẾT LẦN 2!';
+      announceNarrator(
+        'Quan Tòa Lắp Bắp đã ra hiệu bí mật. Làng sẽ tiến hành phiên biểu quyết lần 2 trong ngày hôm nay!',
+        'gavel'
+      );
       await sendChatMessage(room.id, {
         senderId: 'system',
         senderName: 'Quản Trò',
@@ -2457,7 +2505,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         type: 'system',
         createdAt: Date.now(),
       });
-      showToast('⚖️ Đã kích hoạt tín hiệu Quan Tòa! Làng bước vào vòng biểu quyết lần 2.', 'success');
+      showToast('⚖️ Đã gửi tín hiệu Quan Tòa! Làng sẽ có phiên biểu quyết lần 2 sau khi phiên này hoàn tất.', 'success');
+    } catch (err) {
+      console.error('Error in handleStutteringJudgePreSignal:', err);
+      showToast('Không thể gửi tín hiệu Quan Tòa.', 'error');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  // Stuttering Judge Trigger (Button click on Verdict panel or manual activation)
+  const handleStutteringJudgeTrigger = async () => {
+    if (room.villagePowersLost) return;
+    const judge = players.find(
+      (p) => p.isAlive && p.role === 'stuttering_judge' && (!p.stutteringJudgeUsed || room.stutteringJudgeSignActive)
+    );
+    if (!judge && !room.stutteringJudgeSignActive && !isHost) return;
+
+    setIsProcessingAction(true);
+    try {
+      await startJudgeSecondVotingRound(judge);
     } catch (err) {
       console.error('Error in handleStutteringJudgeTrigger:', err);
       showToast('Không thể kích hoạt tín hiệu Quan Tòa.', 'error');
@@ -2679,27 +2746,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
 
-      // Check if there is an active Judge who hasn't used power and this was vote 1
-      const judgePlayer = updatedPlayers.find((p) => p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed);
-      const canJudgeVote2 = judgePlayer && !room.judgeSecondVotingActive && !room.villagePowersLost;
-
-      if (canJudgeVote2) {
-        if (judgePlayer.isBot) {
-          setTimeout(async () => {
-            if (Math.random() < 0.7) {
-              await handleStutteringJudgeTrigger();
-            } else {
-              await proceedToNight(updatedPlayers);
-            }
-          }, 3000);
-        } else {
-          // Human judge has full control to trigger 2nd vote or Host can advance to Night
-          // We also broadcast an attention chime
-          soundEffects.playGavelStrike();
+      // Check if there is an active Judge or Judge sign active and this was vote 1
+      if (!room.judgeSecondVotingActive && !room.villagePowersLost) {
+        // Option 1: Judge gave the signal in advance!
+        if (room.stutteringJudgeSignActive) {
+          if (isHost) {
+            setTimeout(async () => {
+              await startJudgeSecondVotingRound();
+            }, 1500);
+          }
+          return;
         }
-      } else {
-        await proceedToNight(updatedPlayers);
+
+        // Option 2: Judge is alive and hasn't used power yet
+        const judgePlayer = updatedPlayers.find(
+          (p) => p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed
+        );
+
+        if (judgePlayer) {
+          if (judgePlayer.isBot) {
+            if (isHost) {
+              setTimeout(async () => {
+                if (Math.random() < 0.7) {
+                  await startJudgeSecondVotingRound(judgePlayer);
+                } else {
+                  await proceedToNight(updatedPlayers);
+                }
+              }, 3000);
+            }
+            return;
+          } else {
+            // Human judge has control to trigger 2nd vote or Host can advance to Night
+            soundEffects.playGavelStrike();
+            return;
+          }
+        }
       }
+
+      await proceedToNight(updatedPlayers);
     }, 5500);
   };
 
@@ -2786,7 +2870,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       await updateRoomState(room.id, { pendingHunterShot: null });
       if (room.status === 'day_verdict') {
         setTimeout(async () => {
-          await proceedToNight();
+          if (room.stutteringJudgeSignActive && !room.judgeSecondVotingActive && !room.villagePowersLost) {
+            await startJudgeSecondVotingRound();
+          } else {
+            await proceedToNight();
+          }
         }, 3000);
       }
     }
@@ -2807,7 +2895,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     await updateRoomState(room.id, { pendingHunterShot: null });
     if (room.status === 'day_verdict') {
       setTimeout(async () => {
-        await proceedToNight();
+        if (room.stutteringJudgeSignActive && !room.judgeSecondVotingActive && !room.villagePowersLost) {
+          await startJudgeSecondVotingRound();
+        } else {
+          await proceedToNight();
+        }
       }, 2500);
     }
   };
@@ -3070,15 +3162,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </span>
               
             {/* Quick Action Button for Stuttering Judge during Day */}
-            {currentPlayer.role === 'stuttering_judge' && isAlive && !currentPlayer.stutteringJudgeUsed && !room.judgeSecondVotingActive && !room.villagePowersLost && (room.status === 'day_discussion' || room.status === 'day_voting' || room.status === 'day_defense') && (
+            {currentPlayer.role === 'stuttering_judge' && isAlive && !room.judgeSecondVotingActive && !room.villagePowersLost && (room.status === 'day_discussion' || room.status === 'day_voting' || room.status === 'day_defense') && (
               <button
-                onClick={handleStutteringJudgeTrigger}
-                disabled={isProcessingAction}
-                title="Gõ búa ra hiệu cho Quản Trò tổ chức 2 lần bỏ phiếu treo cổ trong ngày hôm nay"
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-700 to-amber-600 hover:from-purple-600 hover:to-amber-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 border border-amber-400/50 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                onClick={handleStutteringJudgePreSignal}
+                disabled={isProcessingAction || room.stutteringJudgeSignActive || currentPlayer.stutteringJudgeUsed}
+                title={
+                  room.stutteringJudgeSignActive
+                    ? 'Quản trò đã nhận tín hiệu! Làng sẽ bỏ phiếu lần 2 sau khi phiên này hoàn tất.'
+                    : 'Gõ búa ra hiệu cho Quản Trò tổ chức 2 lần bỏ phiếu treo cổ trong ngày hôm nay'
+                }
+                className={`px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg flex items-center gap-1.5 border transition-all cursor-pointer disabled:opacity-80 ${
+                  room.stutteringJudgeSignActive
+                    ? 'bg-emerald-800/90 border-emerald-400/80 text-emerald-100'
+                    : 'bg-gradient-to-r from-purple-700 via-indigo-700 to-amber-600 hover:from-purple-600 hover:to-amber-500 text-white border-amber-400/50 hover:scale-105 active:scale-95'
+                }`}
               >
-                <Gavel className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
-                <span>GÕ BÚA RA HIỆU (2 Lần Bỏ Phiếu)</span>
+                <Gavel className={`w-3.5 h-3.5 ${room.stutteringJudgeSignActive ? 'text-emerald-300' : 'text-amber-300 animate-bounce'}`} />
+                <span>{room.stutteringJudgeSignActive ? '✓ ĐÃ RA HIỆU (BỎ PHIẾU LẦN 2)' : 'GÕ BÚA RA HIỆU (2 Lần Bỏ Phiếu)'}</span>
               </button>
             )}
 
@@ -3335,7 +3435,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* 1. Day Verdict Decision Panel */}
       {room.status === 'day_verdict' && (() => {
         const aliveJudge = players.find((p) => p.isAlive && p.role === 'stuttering_judge' && !p.stutteringJudgeUsed);
-        const canJudgeRequestSecondVote = aliveJudge && !room.judgeSecondVotingActive && !room.villagePowersLost;
+        const canJudgeRequestSecondVote = !room.judgeSecondVotingActive && !room.villagePowersLost && (room.stutteringJudgeSignActive || !!aliveJudge);
 
         if (room.verdictFinished) {
           return (
@@ -3357,13 +3457,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   </div>
 
                   <p className="text-xs sm:text-sm text-indigo-100 font-medium">
-                    {currentPlayer.role === 'stuttering_judge' && currentPlayer.isAlive && !currentPlayer.stutteringJudgeUsed
+                    {room.stutteringJudgeSignActive
+                      ? '⚖️ Quan Tòa Lắp Bắp đã ra hiệu từ trước! Đang chuẩn bị chuyển tiếp sang phiên BỎ PHIẾU LẦN 2...'
+                      : currentPlayer.role === 'stuttering_judge' && currentPlayer.isAlive && !currentPlayer.stutteringJudgeUsed
                       ? 'Nạn nhân trước đó đã được xử lý! Bạn có muốn kích hoạt phiên BỎ PHIẾU LẦN 2 cho dân làng ngay bây giờ không?'
                       : 'Nạn nhân trước đó đã được xử lý. Đang chờ Quan Tòa Lắp Bắp ra tín hiệu biểu quyết lần 2...'}
                   </p>
 
                   <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-                    {currentPlayer.role === 'stuttering_judge' && currentPlayer.isAlive && !currentPlayer.stutteringJudgeUsed && (
+                    {(room.stutteringJudgeSignActive || (currentPlayer.role === 'stuttering_judge' && currentPlayer.isAlive && !currentPlayer.stutteringJudgeUsed) || isHost) && (
                       <button
                         onClick={handleStutteringJudgeTrigger}
                         disabled={isProcessingAction}
