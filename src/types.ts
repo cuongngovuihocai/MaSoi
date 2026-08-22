@@ -132,6 +132,7 @@ export interface VoteRecord {
 }
 
 export interface NightActionRecord {
+  id?: string;
   actorId: string;
   actorRole: RoleType;
   targetId?: string;
