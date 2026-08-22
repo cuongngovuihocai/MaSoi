@@ -678,19 +678,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         const hasDeaths = room.lastNightVictimIds && room.lastNightVictimIds.length > 0;
         if (hasDeaths) {
           const count = room.lastNightVictimIds?.length || 1;
-          const victimPlayerNames = players
-            .filter((p) => room.lastNightVictimIds?.includes(p.id))
-            .map((p) => p.name);
+          const victimPlayers = players.filter((p) => room.lastNightVictimIds?.includes(p.id));
 
-          const formatNameList = (names: string[]) => {
-            if (names.length === 0) return '';
-            if (names.length === 1) return names[0];
-            if (names.length === 2) return `${names[0]} và ${names[1]}`;
-            return `${names.slice(0, -1).join(', ')} và ${names[names.length - 1]}`;
+          const formatNameAndReasonList = (vics: Player[]) => {
+            if (vics.length === 0) return '';
+            const items = vics.map((p) => {
+              const reason = p.deathReason ? ` (nguyên nhân: ${p.deathReason})` : '';
+              return `${p.name}${reason}`;
+            });
+            if (items.length === 1) return items[0];
+            if (items.length === 2) return `${items[0]} và ${items[1]}`;
+            return `${items.slice(0, -1).join(', ')}, và ${items[items.length - 1]}`;
           };
 
-          const victimNames = formatNameList(victimPlayerNames);
-          dayMsg += NARRATOR_SCRIPTS.victimAnnounce(victimNames, count);
+          const victimInfoStr = formatNameAndReasonList(victimPlayers);
+          dayMsg += NARRATOR_SCRIPTS.victimAnnounce(victimInfoStr, count);
         } else {
           dayMsg += NARRATOR_SCRIPTS.noDeaths;
         }
@@ -704,6 +706,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
 
         announceNarrator(dayMsg, newWolfAppeared ? 'howl' : hasDeaths ? 'death' : 'rooster');
+
+        // Also broadcast detailed death cause report in Global Chat if host
+        if (isHost && hasDeaths) {
+          const victimPlayers = players.filter((p) => room.lastNightVictimIds?.includes(p.id));
+          const chatLines = victimPlayers.map((p) => `• ${p.name}: ${p.deathReason || 'Cái chết bí ẩn trong đêm'}`).join('\n');
+          const summaryChat = `☠️ BÁO CÁO ÁN MẠNG ĐÊM NGÀY ${room.dayNumber - 1}:\nĐêm qua có ${victimPlayers.length} nạn nhân thiệt mạng:\n${chatLines}\nXin chia buồn cùng toàn thể dân làng!`;
+          sendChatMessage(room.id, {
+            senderId: 'system',
+            senderName: 'Quản Trò',
+            content: summaryChat,
+            channel: 'global',
+            type: 'system',
+            createdAt: Date.now(),
+          });
+        }
       } else if (room.status === 'day_discussion') {
         if (!lastSpokenTextRef.current.includes('Không ai bị nhận đủ số phiếu bầu')) {
           const discMinutes = Math.round((room.config?.discussionTimeSeconds || 180) / 60);
@@ -1759,18 +1776,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
         extraDeadIds.push(lover.id);
 
+        const loverMsg = `💔 CON TIM TAN VỠ: Khi ${deadPlayer.name.toUpperCase()} qua đời, người yêu ${lover.name.toUpperCase()} đã gục ngã và chết theo`;
         if (room.status !== 'night') {
-          const loverMsg = `💔 CON TIM TAN VỠ: Khi ${deadPlayer.name.toUpperCase()} qua đời, người yêu ${lover.name.toUpperCase()} đã gục ngã và chết theo!`;
           announceNarrator(loverMsg, 'death');
-          await sendChatMessage(room.id, {
-            senderId: 'system',
-            senderName: 'Quản Trò',
-            content: loverMsg,
-            channel: 'global',
-            type: 'system',
-            createdAt: Date.now(),
-          });
         }
+        await sendChatMessage(room.id, {
+          senderId: 'system',
+          senderName: 'Quản Trò',
+          content: loverMsg,
+          channel: 'global',
+          type: 'system',
+          createdAt: Date.now(),
+        });
 
         // If lover was Hunter
         if (lover.role === 'hunter') {
@@ -1785,18 +1802,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               });
               extraDeadIds.push(botTarget.id);
 
+              const hunterMsg = `🎯 THỢ SĂN ${lover.name.toUpperCase()} ĐÃ GIƯƠNG CUNG BẮN GỤC ${botTarget.name.toUpperCase()}`;
               if (room.status !== 'night') {
-                const hunterMsg = `🎯 THỢ SĂN ${lover.name.toUpperCase()} TRƯỚC KHI TỰ SÁT ĐÃ GIƯƠNG CUNG BẮN GỤC ${botTarget.name.toUpperCase()}!`;
                 announceNarrator(hunterMsg, 'death');
-                await sendChatMessage(room.id, {
-                  senderId: 'system',
-                  senderName: 'Quản Trò',
-                  content: hunterMsg,
-                  channel: 'global',
-                  type: 'system',
-                  createdAt: Date.now(),
-                });
               }
+              await sendChatMessage(room.id, {
+                senderId: 'system',
+                senderName: 'Quản Trò',
+                content: hunterMsg,
+                channel: 'global',
+                type: 'system',
+                createdAt: Date.now(),
+              });
 
               const nestedDead = await handlePlayerDeathConsequences(botTarget);
               extraDeadIds.push(...nestedDead);
@@ -2069,6 +2086,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   deathTiming: `Chết đêm ngày ${room.dayNumber}`,
                 });
                 allNightVictimsSet.add(botTarget.id);
+
+                const hunterMsg = `🎯 THỢ SĂN ${hunterVictim.name.toUpperCase()} ĐÃ GIƯƠNG CUNG BẮN GỤC ${botTarget.name.toUpperCase()}`;
+                await sendChatMessage(room.id, {
+                  senderId: 'system',
+                  senderName: 'Quản Trò',
+                  content: hunterMsg,
+                  channel: 'global',
+                  type: 'system',
+                  createdAt: Date.now(),
+                });
+
                 const extraIds = await handlePlayerDeathConsequences(botTarget);
                 extraIds.forEach((id) => allNightVictimsSet.add(id));
               }
@@ -2457,7 +2485,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 deathTiming: `Chết sáng ngày ${room.dayNumber}`,
               });
               await handlePlayerDeathConsequences(botTarget);
-              const hunterMsg = `🎯 THỢ SĂN ${victim.name.toUpperCase()} TRƯỚC KHI BỊ TREO CỔ ĐÃ GIƯƠNG CUNG BẮN GỤC ${botTarget.name.toUpperCase()}!`;
+              const hunterMsg = `🎯 THỢ SĂN ${victim.name.toUpperCase()} ĐÃ GIƯƠNG CUNG BẮN GỤC ${botTarget.name.toUpperCase()}`;
               announceNarrator(hunterMsg, 'death');
               await sendChatMessage(room.id, {
                 senderId: 'system',
@@ -2676,7 +2704,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     soundEffects.playDeathBell();
 
-    const hunterMsg = `🎯 THỢ SĂN ${hunterName.toUpperCase()} ĐÃ GIƯƠNG CUNG BẮN GỤC ${targetPlayer.name.toUpperCase()} TRƯỚC KHI TRÚT HƠI THỞ CUỐI CÙNG!`;
+    const hunterMsg = `🎯 THỢ SĂN ${hunterName.toUpperCase()} ĐÃ GIƯƠNG CUNG BẮN GỤC ${targetPlayer.name.toUpperCase()}`;
     announceNarrator(hunterMsg, 'death');
 
     await sendChatMessage(room.id, {
@@ -2687,6 +2715,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       type: 'system',
       createdAt: Date.now(),
     });
+
+    showToast(`🎯 Thợ Săn ${hunterName} đã bắn gục ${targetPlayer.name}!`, 'info');
+
+    // If shot during night phase, ensure victim is added to lastNightVictimIds for morning announcement
+    if (room.status === 'night') {
+      const currentVictims = new Set(room.lastNightVictimIds || []);
+      currentVictims.add(targetId);
+      if (targetPlayer.loverId) {
+        currentVictims.add(targetPlayer.loverId);
+      }
+      await updateRoomState(room.id, {
+        lastNightVictimIds: Array.from(currentVictims),
+      });
+    }
 
     // If target player was also a Hunter and not a bot, chain pendingHunterShot
     if (targetPlayer.role === 'hunter' && !targetPlayer.isBot) {
@@ -2699,6 +2741,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
     } else {
       await updateRoomState(room.id, { pendingHunterShot: null });
+      if (room.status === 'day_verdict') {
+        setTimeout(async () => {
+          await proceedToNight();
+        }, 3000);
+      }
     }
   };
 
@@ -2715,6 +2762,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       createdAt: Date.now(),
     });
     await updateRoomState(room.id, { pendingHunterShot: null });
+    if (room.status === 'day_verdict') {
+      setTimeout(async () => {
+        await proceedToNight();
+      }, 2500);
+    }
   };
 
   // ----------------------------------------------------
@@ -4100,7 +4152,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         <div className="text-[9px] sm:text-[10px] text-slate-400 font-mono truncate leading-tight flex items-center gap-1">
                           {p.isBot ? (
                             <span className="text-purple-400 font-bold flex items-center gap-0.5">
-                              <Bot className="w-2.5 h-2.5" /> Bot
+                              <Bot className="w-2.5 h-2.5" /> Bot {!p.isAlive ? '• Đã chết' : ''}
                             </span>
                           ) : (
                             <span>{p.isAlive ? (isMe ? '(Bạn)' : 'Sống') : 'Đã Chết'}</span>
