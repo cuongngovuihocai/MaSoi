@@ -8,7 +8,7 @@ import {
   Room,
   VoteRecord,
 } from '../types';
-import { ROLE_DEFINITIONS, NARRATOR_SCRIPTS, getUniqueBotNames } from '../data/roles';
+import { ROLE_DEFINITIONS, NARRATOR_SCRIPTS, getUniqueBotNames, formatRoleCompositionWithEpithets } from '../data/roles';
 import {
   batchJoinPlayers,
   batchUpdatePlayers,
@@ -139,12 +139,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [phaseTimeLeft, setPhaseTimeLeft] = useState<number>(0);
   const [hasReminded9Min, setHasReminded9Min] = useState<boolean>(false);
   const botDiscussionTrackerRef = useRef<string>('');
+  const night1RosterBroadcastRef = useRef<boolean>(false);
+  const nightWhisperTrackerRef = useRef<string>('');
 
-  // Reset discussion state & flags on phase change
+  // Reset flags on phase change or when returning to lobby
   useEffect(() => {
     if (room.status !== 'day_discussion') {
       setHasReminded9Min(false);
       setIsEarlyVotingModalOpen(false);
+    }
+    if (room.status === 'lobby' || room.status === 'ended') {
+      night1RosterBroadcastRef.current = false;
+      nightWhisperTrackerRef.current = '';
     }
   }, [room.status, room.dayNumber]);
 
@@ -618,7 +624,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (room.status === 'night') {
         const nightSteps = getValidNightSteps(room.dayNumber, room.rolesList, players);
         const isFirstNightStep = room.nightStep === nightSteps[0];
-        const nightIntro = NARRATOR_SCRIPTS.getNightStart(room.dayNumber);
+        let nightIntro = NARRATOR_SCRIPTS.getNightStart(room.dayNumber);
+
+        // Night 1 introduction with funny role epithets
+        if (room.dayNumber === 1 && isFirstNightStep) {
+          const roleIntro = formatRoleCompositionWithEpithets(players, room.rolesList);
+          nightIntro = `Ván chơi này gồm có: ${roleIntro}. Đêm đã khuya, mời tất cả người chơi đi ngủ...`;
+
+          if (isHost && !night1RosterBroadcastRef.current) {
+            night1RosterBroadcastRef.current = true;
+            sendChatMessage(room.id, {
+              senderId: 'system',
+              senderName: 'Quản Trò',
+              content: `📜 THÀNH PHẦN VÁN ĐẤU:\nVán chơi này gồm có: ${roleIntro}.\n🌙 Đêm đã khuya, mời tất cả người chơi đi ngủ...`,
+              channel: 'global',
+              type: 'system',
+              createdAt: Date.now(),
+            });
+          }
+        }
+
+        // Night whisper in global chat for non-active players during each night step
+        if (isHost && room.nightStep && room.nightStep !== 'done') {
+          const whisperKey = `${room.dayNumber}_${room.nightStep}`;
+          if (nightWhisperTrackerRef.current !== whisperKey) {
+            nightWhisperTrackerRef.current = whisperKey;
+            const whisperMsg = NARRATOR_SCRIPTS.getWaitingMsg(room.nightStep, room.dayNumber);
+            if (whisperMsg) {
+              sendChatMessage(room.id, {
+                senderId: 'system',
+                senderName: 'Quản Trò',
+                content: `🌙 ${whisperMsg}`,
+                channel: 'global',
+                type: 'system',
+                createdAt: Date.now(),
+              });
+            }
+          }
+        }
 
         let stepMsg = '';
         let soundEffect: 'wind' | 'howl' | 'chime' = 'chime';
