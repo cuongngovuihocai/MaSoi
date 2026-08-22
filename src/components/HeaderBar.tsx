@@ -190,29 +190,17 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
               ? 'bg-purple-900/80 border-purple-400 text-purple-100 shadow-md shadow-purple-900/40 ring-2 ring-purple-500/40'
               : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-700/80 text-slate-200 hover:border-purple-500/50'
           }`}
-          title="Tùy chỉnh âm thanh, giọng đọc Quản trò và tốc độ"
+          title="Tùy chỉnh trò chơi"
         >
           <Settings className={`w-4 h-4 text-purple-300 ${isSettingsOpen ? 'rotate-45' : ''} transition-transform duration-200`} />
           <span className="hidden sm:inline font-sans">Tùy chỉnh</span>
         </button>
 
-        {/* Leave Room Button */}
-        {roomId && onLeaveRoom && (
-          <button
-            onClick={onLeaveRoom}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 hover:bg-rose-900/80 hover:text-rose-200 transition-all flex items-center gap-1 text-xs font-medium"
-            title="Rời phòng"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden md:inline">Rời phòng</span>
-          </button>
-        )}
-
         {/* Settings Popover Dropdown Panel */}
         {isSettingsOpen && (
           <div
             id="settings-dropdown-panel"
-            className="absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] xs:w-84 sm:w-96 bg-slate-900/95 border border-purple-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-2xl z-50 text-slate-100 animate-in fade-in zoom-in-95 duration-150"
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] xs:w-80 sm:w-88 bg-slate-900/95 border border-purple-500/40 rounded-2xl p-4 shadow-2xl backdrop-blur-2xl z-50 text-slate-100 animate-in fade-in zoom-in-95 duration-150"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-purple-500/20">
@@ -220,22 +208,20 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
                 <div className="p-1.5 rounded-lg bg-purple-950/80 border border-purple-500/30 text-purple-300">
                   <Settings className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-slate-100">Tùy Chỉnh Âm Thanh</h3>
-                  <p className="text-[11px] text-slate-400">Cài đặt giọng đọc Quản trò & hiệu ứng</p>
-                </div>
+                <h3 className="font-semibold text-sm text-slate-100">Tùy chỉnh</h3>
               </div>
               <button
                 onClick={() => setIsSettingsOpen(false)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Option 1: Giọng đọc Quản trò */}
-              <div className="flex items-center justify-between bg-slate-950/60 p-3 rounded-xl border border-slate-800 hover:border-purple-500/30 transition-colors">
+              <div className="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 hover:border-purple-500/30 transition-colors">
                 <div className="flex items-center gap-2.5">
                   <div
                     className={`p-2 rounded-xl transition-colors ${
@@ -246,10 +232,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
                   >
                     {speechEnabled ? <Mic className="w-4 h-4 text-emerald-400" /> : <MicOff className="w-4 h-4" />}
                   </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-200">Giọng đọc Quản trò</div>
-                    <div className="text-[11px] text-slate-400">Dẫn truyện & gọi dậy từng chức năng</div>
-                  </div>
+                  <span className="text-xs font-semibold text-slate-200">Giọng đọc Quản trò</span>
                 </div>
 
                 <button
@@ -265,7 +248,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
               </div>
 
               {/* Option 2: Tốc độ đọc */}
-              <div className={`bg-slate-950/60 p-3 rounded-xl border border-slate-800 transition-opacity ${speechEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+              <div className={`bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 transition-opacity ${speechEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -298,7 +281,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
               </div>
 
               {/* Option 3: Hiệu ứng âm thanh */}
-              <div className="flex items-center justify-between bg-slate-950/60 p-3 rounded-xl border border-slate-800 hover:border-purple-500/30 transition-colors">
+              <div className="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 hover:border-purple-500/30 transition-colors">
                 <div className="flex items-center gap-2.5">
                   <div
                     className={`p-2 rounded-xl transition-colors ${
@@ -309,10 +292,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
                   >
                     {soundEnabled ? <Volume2 className="w-4 h-4 text-indigo-400" /> : <VolumeX className="w-4 h-4" />}
                   </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-200">Hiệu ứng âm thanh</div>
-                    <div className="text-[11px] text-slate-400">Tiếng sói hú, gõ búa, chuông báo</div>
-                  </div>
+                  <span className="text-xs font-semibold text-slate-200">Hiệu ứng âm thanh</span>
                 </div>
 
                 <button
@@ -329,14 +309,28 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ roomId, onOpenRules, onLea
 
               {/* Quick Test Voice Button */}
               {speechEnabled && (
-                <div className="pt-1">
+                <button
+                  onClick={handleTestVoice}
+                  disabled={isTestingVoice}
+                  className="w-full py-2 px-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/30 text-purple-200 text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                >
+                  <Volume1 className={`w-4 h-4 text-purple-400 ${isTestingVoice ? 'animate-pulse' : ''}`} />
+                  <span>{isTestingVoice ? 'Đang phát thử...' : 'Nghe thử giọng Quản trò'}</span>
+                </button>
+              )}
+
+              {/* Option 4: Rời phòng (Leave Room) */}
+              {roomId && onLeaveRoom && (
+                <div className="pt-2 border-t border-purple-500/20">
                   <button
-                    onClick={handleTestVoice}
-                    disabled={isTestingVoice}
-                    className="w-full py-2 px-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/30 text-purple-200 text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                    onClick={() => {
+                      setIsSettingsOpen(false);
+                      onLeaveRoom();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-rose-950/50 hover:bg-rose-900/80 border border-rose-500/40 text-rose-300 hover:text-rose-100 text-xs font-medium flex items-center justify-center gap-2 transition-all shadow-sm"
                   >
-                    <Volume1 className={`w-4 h-4 text-purple-400 ${isTestingVoice ? 'animate-pulse' : ''}`} />
-                    <span>{isTestingVoice ? 'Đang phát thử giọng...' : 'Nghe thử giọng Quản trò'}</span>
+                    <LogOut className="w-4 h-4" />
+                    <span>Rời phòng</span>
                   </button>
                 </div>
               )}
