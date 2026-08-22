@@ -12,9 +12,10 @@ import { ROLE_DEFINITIONS, NARRATOR_SCRIPTS, getUniqueBotNames } from '../data/r
 import {
   batchJoinPlayers,
   batchUpdatePlayers,
-  clearNightActionsAndVotes,
+  clearRoomActions,
   clearRoomForNewGame,
   clearRoomMessages,
+  clearRoomVotes,
   deleteNightAction,
   leaveRoom,
   sendChatMessage,
@@ -244,16 +245,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Witch potion single-use tracking across past nights (ignoring refunded potions)
   const hasUsedHealInPast = useMemo(() => {
-    return actions.some(
-      (a) => a.actionType === 'witch_heal' && a.targetId && a.dayNumber < room.dayNumber && !a.isRefunded
+    return (
+      Boolean(currentPlayer.witchHealUsed) ||
+      actions.some(
+        (a) => a.actionType === 'witch_heal' && a.targetId && a.dayNumber < room.dayNumber && !a.isRefunded
+      )
     );
-  }, [actions, room.dayNumber]);
+  }, [actions, room.dayNumber, currentPlayer.witchHealUsed]);
 
   const hasUsedPoisonInPast = useMemo(() => {
-    return actions.some(
-      (a) => a.actionType === 'witch_poison' && a.targetId && a.dayNumber < room.dayNumber
+    return (
+      Boolean(currentPlayer.witchPoisonUsed) ||
+      actions.some(
+        (a) => a.actionType === 'witch_poison' && a.targetId && a.dayNumber < room.dayNumber
+      )
     );
-  }, [actions, room.dayNumber]);
+  }, [actions, room.dayNumber, currentPlayer.witchPoisonUsed]);
 
   // Curse Wolf tracking across past nights
   const hasUsedCurseWolfInPast = useMemo(() => {
@@ -981,12 +988,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }
           }
         } else if (room.nightStep === 'witch' && bot.role === 'witch' && !room.villagePowersLost) {
-          const hasUsedPoisonEver = actions.some(
-            (a) => a.actorId === bot.id && a.actionType === 'witch_poison' && a.targetId
-          );
-          const hasUsedHealEver = actions.some(
-            (a) => a.actorId === bot.id && a.actionType === 'witch_heal' && a.targetId && !a.isRefunded
-          );
+          const hasUsedPoisonEver =
+            Boolean(bot.witchPoisonUsed) ||
+            actions.some(
+              (a) => a.actorId === bot.id && a.actionType === 'witch_poison' && a.targetId
+            );
+          const hasUsedHealEver =
+            Boolean(bot.witchHealUsed) ||
+            actions.some(
+              (a) => a.actorId === bot.id && a.actionType === 'witch_heal' && a.targetId && !a.isRefunded
+            );
           const hasActedTonight = actions.some(
             (a) => a.actorId === bot.id && (a.actionType === 'witch_poison' || a.actionType === 'witch_heal') && a.dayNumber === room.dayNumber
           );
@@ -1231,6 +1242,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             deathTiming: '',
             loverId: '',
             fosterParentId: '',
+            idiotSaved: false,
+            curseUsed: false,
+            foxLostPower: false,
+            elderExtraLifeUsed: false,
             isMuted: false,
             isProtected: false,
             isEnchanted: false,
@@ -1240,6 +1255,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             witchPoisonUsed: false,
             voteCount: 0,
             hasVoted: false,
+            votedTargetId: '',
           },
         };
       });
@@ -1251,7 +1267,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       await sendChatMessage(room.id, {
         senderId: 'system',
         senderName: 'Quản Trò',
-        content: '🎮 Ván chơi mới đã chính thức bắt đầu! Lịch sử trò chuyện ván trước đã được làm sạch.',
+        content: '🎮 Ván chơi mới đã chính thức bắt đầu! Lịch sử trò chuyện và hoạt động ván trước đã được làm sạch.',
         channel: 'global',
         type: 'system',
         createdAt: Date.now(),
@@ -1272,6 +1288,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         villagePowersLost: false,
         judgeSecondVotingActive: false,
         stutteringJudgeSignActive: false,
+        pendingHunterShot: null,
+        lastNightVictimIds: [],
       });
     } catch (err) {
       console.error('Error starting match:', err);
@@ -1728,22 +1746,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const handlePlayerDeathConsequences = async (deadPlayer: Player): Promise<string[]> => {
     const extraDeadIds: string[] = [];
 
-    // 1. Check if dead player is Elder killed by friendly fire/witch/hunter
-    if (deadPlayer.role === 'elder' && !room.villagePowersLost) {
-      await updateRoomState(room.id, { villagePowersLost: true });
-      const elderPenaltyMsg = `⚡ GIÀ LÀNG ${deadPlayer.name.toUpperCase()} ĐÃ QUA ĐỜI! Các thần linh phẫn nộ: TOÀN BỘ DÂN LÀNG (Tiên Tri, Bảo Vệ, Phù Thủy, Con Cáo...) ĐÃ MẤT SẠCH NĂNG LỰC ĐẶC BIỆT!`;
-      announceNarrator(elderPenaltyMsg, 'death');
-      await sendChatMessage(room.id, {
-        senderId: 'system',
-        senderName: 'Quản Trò',
-        content: elderPenaltyMsg,
-        channel: 'global',
-        type: 'system',
-        createdAt: Date.now(),
-      });
-    }
-
-    // 2. Lover Heartbreak
+    // 1. Lover Heartbreak
     if (deadPlayer.loverId) {
       const lover = players.find((p) => p.id === deadPlayer.loverId && p.isAlive);
       if (lover) {
@@ -1946,12 +1949,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 actionType: 'witch_heal',
                 dayNumber: room.dayNumber,
               });
+              await updatePlayerState(room.id, witchHealAction.actorId, { witchHealUsed: true });
             }
           }
 
           // Witch Poison
           const witchPoisonAction = tonightActions.find((a) => a.actionType === 'witch_poison');
           const poisonedTargetId = witchPoisonAction?.targetId;
+          if (witchPoisonAction && witchPoisonAction.actorId && poisonedTargetId) {
+            await updatePlayerState(room.id, witchPoisonAction.actorId, { witchPoisonUsed: true });
+          }
 
           // White Wolf Kill
           const whiteWolfAction = tonightActions.find((a) => a.actionType === 'white_wolf_kill' && a.targetId);
@@ -2331,7 +2338,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Transition to Night Phase
   const proceedToNight = async (currentPlayersList = players) => {
-    await clearNightActionsAndVotes(room.id);
+    await clearRoomVotes(room.id);
     const nextNightDay = room.dayNumber;
     const validSteps = getValidNightSteps(nextNightDay, room.rolesList, currentPlayersList);
     const firstNightStep = validSteps[0] || 'werewolves';
@@ -2356,7 +2363,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setIsProcessingAction(true);
     try {
       await updatePlayerState(room.id, judge.id, { stutteringJudgeUsed: true });
-      await clearNightActionsAndVotes(room.id);
+      await clearRoomVotes(room.id);
 
       await updateRoomState(room.id, {
         stutteringJudgeSignActive: true,
@@ -2640,6 +2647,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       deathTiming: timingStr,
     });
 
+    const hunterActorId = room.pendingHunterShot?.hunterId || 'system_hunter';
+    await submitNightAction(room.id, {
+      actorId: hunterActorId,
+      actorRole: 'hunter',
+      targetId: targetId,
+      actionType: 'hunter_revenge_shot',
+      dayNumber: room.dayNumber,
+    });
+
     // Trigger death consequences (Lovers heartbreak, Wild Child transformation)
     await handlePlayerDeathConsequences(targetPlayer);
 
@@ -2757,7 +2773,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     try {
       setIsEarlyVotingModalOpen(false);
       const votingMs = (room.config?.votingTimeSeconds || 30) * 1000;
-      await clearNightActionsAndVotes(room.id);
+      await clearRoomVotes(room.id);
       await updateRoomState(room.id, {
         status: 'day_voting',
         phaseEndTime: Date.now() + votingMs,
@@ -2883,7 +2899,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         try {
           setIsEarlyVotingModalOpen(false);
           const votingMs = (room.config?.votingTimeSeconds || 30) * 1000;
-          await clearNightActionsAndVotes(room.id);
+          await clearRoomVotes(room.id);
           await updateRoomState(room.id, {
             status: 'day_voting',
             phaseEndTime: Date.now() + votingMs,
@@ -4502,6 +4518,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onRematch={handleStartMatch}
           onReturnLobby={async () => {
             await clearRoomForNewGame(room.id);
+            const playerUpdates = players.map((p) => ({
+              id: p.id,
+              updates: {
+                isAlive: true,
+                deathReason: '',
+                deathTiming: '',
+                loverId: '',
+                fosterParentId: '',
+                idiotSaved: false,
+                curseUsed: false,
+                foxLostPower: false,
+                elderExtraLifeUsed: false,
+                isMuted: false,
+                isProtected: false,
+                isEnchanted: false,
+                hasBeenCurseWolfTransformed: false,
+                stutteringJudgeUsed: false,
+                witchHealUsed: false,
+                witchPoisonUsed: false,
+                voteCount: 0,
+                hasVoted: false,
+                votedTargetId: '',
+              },
+            }));
+            await batchUpdatePlayers(room.id, playerUpdates);
             await updateRoomState(room.id, {
               status: 'lobby',
               winner: undefined,
@@ -4511,6 +4552,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               villagePowersLost: false,
               judgeSecondVotingActive: false,
               stutteringJudgeSignActive: false,
+              pendingHunterShot: null,
+              lastNightVictimIds: [],
             });
             if (onLeaveRoom) {
               onLeaveRoom();
