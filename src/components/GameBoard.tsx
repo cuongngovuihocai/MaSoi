@@ -468,6 +468,119 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }));
   }, [room.rolesList, players]);
 
+  // Win Condition Evaluation Helper (Unified for all game end checks)
+  const evaluateGameEnd = useCallback(
+    (
+      currentAlivePlayers: Player[],
+      allCurrentPlayers: Player[],
+      currentActions: NightActionRecord[]
+    ): { winner: 'piper' | 'lovers' | 'white_wolf' | 'werewolves' | 'villagers' | null; message: string; sound: 'victory' | 'howl' } | null => {
+      if (currentAlivePlayers.length === 0) {
+        return null;
+      }
+
+      // 1. Check Piper (Người Thổi Sáo) Win Condition: Piper alive and all other alive are enchanted
+      const alivePiper = currentAlivePlayers.find((p) => p.role === 'piper');
+      if (alivePiper) {
+        const otherAlive = currentAlivePlayers.filter((p) => p.id !== alivePiper.id);
+        const enchantedIds = new Set<string>();
+        currentActions.forEach((a) => {
+          if (a.actionType === 'piper_enchant') {
+            if (a.targetId) enchantedIds.add(a.targetId);
+            if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => enchantedIds.add(id));
+          }
+        });
+        if (otherAlive.length === 0 || (otherAlive.length > 0 && otherAlive.every((p) => enchantedIds.has(p.id)))) {
+          return {
+            winner: 'piper',
+            message: NARRATOR_SCRIPTS.victoryAnnounce('Người Thổi Sáo đã thôi miên toàn bộ người còn sống và giành chiến thắng ngoạn mục!'),
+            sound: 'victory',
+          };
+        }
+      }
+
+      // 2. Check Lovers (Cặp Đôi Tình Yêu) Win Condition: Exactly 2 alive and both are linked lovers
+      if (currentAlivePlayers.length === 2) {
+        const loverIds = new Set<string>();
+        const cupidActions = currentActions.filter((a) => a.actionType === 'cupid_link');
+        cupidActions.forEach((a) => {
+          if (a.targetId) loverIds.add(a.targetId);
+          if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => loverIds.add(id));
+        });
+        allCurrentPlayers.forEach((p) => {
+          if (p.loverId) loverIds.add(p.id);
+        });
+        if (loverIds.size > 0 && currentAlivePlayers.every((p) => loverIds.has(p.id))) {
+          return {
+            winner: 'lovers',
+            message: NARRATOR_SCRIPTS.victoryAnnounce('Cặp đôi tình yêu đã cùng nhau vượt qua mọi hiểm nguy và giành chiến thắng chung cuộc!'),
+            sound: 'victory',
+          };
+        }
+      }
+
+      // 3. Classify Alive Factions:
+      // Real Wolf killers (Werewolf, Curse Wolf, Dire Wolf, Wolf Cub, White Wolf)
+      // Note: wolf_man is a villager who inspects as wolf to seer, so wolf_man belongs to Villagers!
+      const aliveWerewolfTeam = currentAlivePlayers.filter((p) => {
+        const rMeta = ROLE_DEFINITIONS[p.role as RoleType];
+        return (
+          p.role !== 'white_wolf' &&
+          p.role !== 'wolf_man' &&
+          (p.team === 'werewolves' || (rMeta && rMeta.team === 'werewolves'))
+        );
+      });
+
+      const aliveWhiteWolf = currentAlivePlayers.find((p) => p.role === 'white_wolf');
+      const hasAnyWolfAlive = aliveWerewolfTeam.length > 0 || !!aliveWhiteWolf;
+
+      // 4. Check White Wolf Solo Win:
+      // White Wolf wins ONLY if it is the sole survivor on the entire board (or sole 1 survivor)
+      if (aliveWhiteWolf && currentAlivePlayers.length === 1 && currentAlivePlayers[0].id === aliveWhiteWolf.id) {
+        return {
+          winner: 'white_wolf',
+          message: NARRATOR_SCRIPTS.victoryAnnounce('Sói Trắng đã tiêu diệt toàn bộ bầy Sói lẫn Dân Làng và trở thành bá chủ duy nhất!'),
+          sound: 'howl',
+        };
+      }
+
+      // 5. Check Villagers Win:
+      // Villagers win if and only if ALL wolves (both regular Werewolves & White Wolf) are dead!
+      if (!hasAnyWolfAlive && currentAlivePlayers.length > 0) {
+        return {
+          winner: 'villagers',
+          message: NARRATOR_SCRIPTS.victoryAnnounce('Phe Dân Làng đã tiêu diệt hết Ma Sói và chiến thắng!'),
+          sound: 'victory',
+        };
+      }
+
+      // 6. Check Regular Werewolf Team Win:
+      // Werewolf team wins if:
+      // - White Wolf is dead (or doesn't exist in game)
+      // - Regular Werewolf count >= Non-Wolf count
+      // - Werewolf count > 0 and Non-Wolf count >= 0
+      if (!aliveWhiteWolf && aliveWerewolfTeam.length > 0) {
+        const aliveNonWolves = currentAlivePlayers.filter(
+          (p) => !aliveWerewolfTeam.some((w) => w.id === p.id)
+        );
+        if (aliveWerewolfTeam.length >= aliveNonWolves.length) {
+          return {
+            winner: 'werewolves',
+            message: NARRATOR_SCRIPTS.victoryAnnounce('Phe Ma Sói đã áp đảo số lượng và giành chiến thắng!'),
+            sound: 'howl',
+          };
+        }
+      }
+
+      // 7. If White Wolf is still alive along with other players:
+      // - If White Wolf + Regular Wolf + Villager (e.g. 3 players): game MUST continue (White Wolf wants to kill wolf, wolves want to kill villager, villager wants to hang wolves).
+      // - If White Wolf + 1 Villager (2 players): game MUST continue to daytime voting/night kill so either White Wolf or Villager hangs the other!
+      // - If White Wolf + Regular Wolves only (no villagers): Game continues until White Wolf kills wolves or wolves/day vote eliminates White Wolf.
+      return null;
+    },
+    []
+  );
+
   // Auto-trigger story preamble and secret card reveal sequence when match starts
   useEffect(() => {
     if (room.status !== 'lobby' && room.status !== 'ended') {
@@ -816,15 +929,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (!isHost) return;
 
-    // Check Win Condition periodically
     const alivePlayers = players.filter((p) => p.isAlive);
-    const aliveWolves = alivePlayers.filter((p) => {
-      const rMeta = ROLE_DEFINITIONS[p.role as RoleType];
-      return p.team === 'werewolves' || (rMeta && rMeta.team === 'werewolves');
-    });
-    const aliveNonWolves = alivePlayers.filter(
-      (p) => !aliveWolves.some((w) => w.id === p.id)
-    );
 
     if (
       room.status !== 'lobby' &&
@@ -862,53 +967,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
 
-      // 1. Check Piper (Người Thổi Sáo) Win Condition
-      const alivePiper = alivePlayers.find((p) => p.role === 'piper');
-      if (alivePiper) {
-        const otherAlive = alivePlayers.filter((p) => p.id !== alivePiper.id);
-        const enchantedIds = new Set<string>();
-        actions.forEach((a) => {
-          if (a.actionType === 'piper_enchant') {
-            if (a.targetId) enchantedIds.add(a.targetId);
-            if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => enchantedIds.add(id));
-          }
-        });
-        if (otherAlive.length === 0 || (otherAlive.length > 0 && otherAlive.every((p) => enchantedIds.has(p.id)))) {
-          updateRoomState(room.id, { status: 'ended', winner: 'piper' });
-          announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Người Thổi Sáo đã thôi miên toàn bộ người còn sống và giành chiến thắng ngoạn mục!'), 'victory');
-          return;
-        }
-      }
-
-      // 2. Check Lovers (Cặp Đôi Tình Yêu) Win Condition
-      if (alivePlayers.length === 2) {
-        const loverIds = new Set<string>();
-        const cupidActions = actions.filter((a) => a.actionType === 'cupid_link');
-        cupidActions.forEach((a) => {
-          if (a.targetId) loverIds.add(a.targetId);
-          if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => loverIds.add(id));
-        });
-        players.forEach((p) => {
-          if (p.loverId) loverIds.add(p.id);
-        });
-        if (loverIds.size > 0 && alivePlayers.every((p) => loverIds.has(p.id))) {
-          updateRoomState(room.id, { status: 'ended', winner: 'lovers' });
-          announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Cặp đôi tình yêu đã cùng nhau vượt qua mọi hiểm nguy và giành chiến thắng chung cuộc!'), 'victory');
-          return;
-        }
-      }
-
-      if (aliveWolves.length === 0) {
-        updateRoomState(room.id, { status: 'ended', winner: 'villagers' });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Phe Dân Làng đã tiêu diệt hết Ma Sói và chiến thắng!'), 'victory');
-        return;
-      } else if (aliveWolves.length === 1 && aliveWolves[0].role === 'white_wolf' && aliveWolves.length >= aliveNonWolves.length) {
-        updateRoomState(room.id, { status: 'ended', winner: 'white_wolf' });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Sói Trắng đã tiêu diệt hết đồng loại lẫn Dân Làng và chiến thắng đơn độc!'), 'howl');
-        return;
-      } else if (aliveWolves.length >= aliveNonWolves.length && aliveNonWolves.length > 0) {
-        updateRoomState(room.id, { status: 'ended', winner: 'werewolves' });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Phe Ma Sói áp đảo số lượng và chiến thắng!'), 'howl');
+      const winResult = evaluateGameEnd(alivePlayers, players, actions);
+      if (winResult) {
+        updateRoomState(room.id, { status: 'ended', winner: winResult.winner });
+        announceNarrator(winResult.message, winResult.sound);
         return;
       }
     }
@@ -2658,91 +2720,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       // Check win condition after execution announcement finishes
       const alivePlayers = updatedPlayers.filter((p) => p.isAlive);
-      const aliveWolves = alivePlayers.filter((p) => {
-        const rMeta = ROLE_DEFINITIONS[p.role as RoleType];
-        return p.team === 'werewolves' || (rMeta && rMeta.team === 'werewolves');
-      });
-      const aliveNonWolves = alivePlayers.filter(
-        (p) => !aliveWolves.some((w) => w.id === p.id)
-      );
-
-      // 2. Check Piper (Người Thổi Sáo) Win Condition
-      const alivePiper = alivePlayers.find((p) => p.role === 'piper');
-      if (alivePiper) {
-        const otherAlive = alivePlayers.filter((p) => p.id !== alivePiper.id);
-        const enchantedIds = new Set<string>();
-        actions.forEach((a) => {
-          if (a.actionType === 'piper_enchant') {
-            if (a.targetId) enchantedIds.add(a.targetId);
-            if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => enchantedIds.add(id));
-          }
-        });
-        if (otherAlive.length === 0 || (otherAlive.length > 0 && otherAlive.every((p) => enchantedIds.has(p.id)))) {
-          await updateRoomState(room.id, {
-            status: 'ended',
-            winner: 'piper',
-            accusedPlayerId: null,
-            verdictFinished: false,
-            verdictResultText: null,
-          });
-          announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Người Thổi Sáo đã thôi miên toàn bộ người còn sống và giành chiến thắng ngoạn mục!'), 'victory');
-          return;
-        }
-      }
-
-      // 3. Check Lovers (Cặp Đôi Tình Yêu) Win Condition
-      if (alivePlayers.length === 2) {
-        const loverIds = new Set<string>();
-        const cupidActions = actions.filter((a) => a.actionType === 'cupid_link');
-        cupidActions.forEach((a) => {
-          if (a.targetId) loverIds.add(a.targetId);
-          if (a.targetIds && Array.isArray(a.targetIds)) a.targetIds.forEach((id) => loverIds.add(id));
-        });
-        updatedPlayers.forEach((p) => {
-          if (p.loverId) loverIds.add(p.id);
-        });
-        if (loverIds.size > 0 && alivePlayers.every((p) => loverIds.has(p.id))) {
-          await updateRoomState(room.id, {
-            status: 'ended',
-            winner: 'lovers',
-            accusedPlayerId: null,
-            verdictFinished: false,
-            verdictResultText: null,
-          });
-          announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Cặp đôi tình yêu đã cùng nhau vượt qua mọi hiểm nguy và giành chiến thắng chung cuộc!'), 'victory');
-          return;
-        }
-      }
-
-      if (aliveWolves.length === 0 && alivePlayers.length > 0) {
+      const winResult = evaluateGameEnd(alivePlayers, updatedPlayers, actions);
+      if (winResult) {
         await updateRoomState(room.id, {
           status: 'ended',
-          winner: 'villagers',
+          winner: winResult.winner,
           accusedPlayerId: null,
           verdictFinished: false,
           verdictResultText: null,
         });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Phe Dân Làng đã tiêu diệt hết Ma Sói và chiến thắng!'), 'victory');
-        return;
-      } else if (aliveWolves.length === 1 && aliveWolves[0].role === 'white_wolf' && aliveWolves.length >= aliveNonWolves.length) {
-        await updateRoomState(room.id, {
-          status: 'ended',
-          winner: 'white_wolf',
-          accusedPlayerId: null,
-          verdictFinished: false,
-          verdictResultText: null,
-        });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Sói Trắng đã tiêu diệt hết đồng loại lẫn dân Làng. Độc bá Võ lâm!'), 'howl');
-        return;
-      } else if (aliveWolves.length >= aliveNonWolves.length && aliveNonWolves.length > 0) {
-        await updateRoomState(room.id, {
-          status: 'ended',
-          winner: 'werewolves',
-          accusedPlayerId: null,
-          verdictFinished: false,
-          verdictResultText: null,
-        });
-        announceNarrator(NARRATOR_SCRIPTS.victoryAnnounce('Phe Ma Sói áp đảo số lượng và chiến thắng!'), 'howl');
+        announceNarrator(winResult.message, winResult.sound);
         return;
       }
 
