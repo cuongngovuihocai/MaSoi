@@ -564,7 +564,7 @@ export const NARRATOR_SCRIPTS = {
       ],
       witch: [
         'Mùi thảo mộc và độc dược phảng phất trong gió khuya... Dân làng hãy tiếp tục yên ngủ.',
-        `Độc dược và Giải dược, hai bình thuốc thần kỳ không nhãn. Uống nhầm một ngụm, cơn say theo cả đời...`,
+        `Độc dược và Giải dược, hai bình thuốc thần kỳ không nhãn. Uống nhầm một ngụm thuốc, cơn say theo cả đời...`,
         'Không gian tĩnh mịch rợn người... Hãy nhắm mắt và giữ im lặng.',
       ],
       piper: [
@@ -588,8 +588,8 @@ export const NARRATOR_SCRIPTS = {
 
   dayStart: 'Trời đã sáng rồi! Tất cả dân làng hãy thức dậy...',
   noDeaths: 'Đêm qua không có bất cứ án mạng nào xảy ra.',
-  victimAnnounce: (names: string, count: number = 1) =>
-    `Đêm qua, đã có ${count === 1 ? '1 người dân' : `${count} người dân`} bị thiệt mạng. Đó là ${names}. Xin chia buồn và mời ${count === 1 ? 'thành viên' : 'các thành viên'} ${names} di chuyển vào nhóm chat Tâm linh.`,
+  victimAnnounce: (namesWithReasons: string, count: number = 1) =>
+    `Đêm qua, đã có ${count === 1 ? '1 người dân' : `${count} người dân`} bị thiệt mạng: ${namesWithReasons}. Xin chia buồn và mời các nạn nhân di chuyển vào nhóm chat Tâm linh.`,
   discussionPrompt: (minutes?: number) =>
     minutes
       ? `Mời toàn thể dân làng tích cực thảo luận bằng cách gõ chữ vào ô chat, hoặc ghi âm trực tiếp. Thời gian thảo luận tối đa là ${minutes} phút.`
