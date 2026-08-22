@@ -287,17 +287,29 @@ export async function submitVote(roomId: string, vote: VoteRecord) {
 }
 
 export async function submitNightAction(roomId: string, action: NightActionRecord) {
-  const isMultiTarget = action.actionType === 'cupid_link' || action.actionType === 'piper_enchant' || action.actionType === 'fox_sniff';
+  const isMultiTarget =
+    action.actionType === 'cupid_link' ||
+    action.actionType === 'piper_enchant' ||
+    action.actionType === 'fox_sniff' ||
+    action.actionType === 'village_nominate' ||
+    action.actionType === 'village_verdict_execute' ||
+    action.actionType === 'village_verdict_pardon';
   const targetSuffix = isMultiTarget && action.targetId ? `_${action.targetId}` : '';
-  const docId = `${action.actorId}_${action.actionType}${targetSuffix}_${action.dayNumber}`;
+  const docId = action.id || `${action.actorId}_${action.actionType}${targetSuffix}_${action.dayNumber}`;
   const actionRef = doc(db, 'rooms', roomId, 'actions', docId);
   await setDoc(actionRef, sanitizeData(action));
 }
 
 export async function deleteNightAction(roomId: string, action: NightActionRecord) {
-  const isMultiTarget = action.actionType === 'cupid_link' || action.actionType === 'piper_enchant' || action.actionType === 'fox_sniff';
+  const isMultiTarget =
+    action.actionType === 'cupid_link' ||
+    action.actionType === 'piper_enchant' ||
+    action.actionType === 'fox_sniff' ||
+    action.actionType === 'village_nominate' ||
+    action.actionType === 'village_verdict_execute' ||
+    action.actionType === 'village_verdict_pardon';
   const targetSuffix = isMultiTarget && action.targetId ? `_${action.targetId}` : '';
-  const docId = `${action.actorId}_${action.actionType}${targetSuffix}_${action.dayNumber}`;
+  const docId = action.id || `${action.actorId}_${action.actionType}${targetSuffix}_${action.dayNumber}`;
   const actionRef = doc(db, 'rooms', roomId, 'actions', docId);
   await deleteDoc(actionRef);
 }
@@ -316,30 +328,44 @@ export async function clearRoomMessages(roomId: string) {
   }
 }
 
-export async function clearNightActionsAndVotes(roomId: string) {
+export async function clearRoomVotes(roomId: string) {
   try {
-    const batch = writeBatch(db);
-
-    // Clear votes from previous discussion/voting rounds
     const votesCol = collection(db, 'rooms', roomId, 'votes');
     const votesSnap = await getDocs(votesCol);
-    votesSnap.forEach((d) => batch.delete(d.ref));
+    if (!votesSnap.empty) {
+      const batch = writeBatch(db);
+      votesSnap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn(`Error clearing votes for room ${roomId}:`, err);
+  }
+}
 
-    // Clear night actions
+export async function clearRoomActions(roomId: string) {
+  try {
     const actionsCol = collection(db, 'rooms', roomId, 'actions');
     const actionsSnap = await getDocs(actionsCol);
-    actionsSnap.forEach((d) => batch.delete(d.ref));
-
-    await batch.commit();
+    if (!actionsSnap.empty) {
+      const batch = writeBatch(db);
+      actionsSnap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
   } catch (err) {
-    console.warn(`Error clearing actions and votes for room ${roomId}:`, err);
+    console.warn(`Error clearing actions for room ${roomId}:`, err);
   }
+}
+
+// Clear only votes between rounds during an active match (DO NOT delete match actions history)
+export async function clearNightActionsAndVotes(roomId: string) {
+  await clearRoomVotes(roomId);
 }
 
 export async function clearRoomForNewGame(roomId: string) {
   try {
     await clearRoomMessages(roomId);
-    await clearNightActionsAndVotes(roomId);
+    await clearRoomVotes(roomId);
+    await clearRoomActions(roomId);
   } catch (err) {
     console.warn(`Error resetting room state for new game in room ${roomId}:`, err);
   }
